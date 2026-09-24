@@ -4,11 +4,13 @@ Jogo de damas online construído em etapas com Java 25, Spring Boot, Angular e T
 
 ```text
 backend/         API e regras do jogo (Spring Boot)
-frontend/        aplicação Angular (próxima etapa)
+frontend/        aplicação Angular (etapa posterior)
 infrastructure/  infraestrutura AWS em Terraform (etapa posterior)
 ```
 
-## Etapa atual: base do backend
+## Etapa atual: domínio do backend
+
+O modelo inicial está em [backend/README.md](backend/README.md): agregados Partida e Jogador, identidades e tabuleiro. Ainda não há movimento, API de partidas, frontend ou infraestrutura AWS.
 
 Requisitos: JDK 25 e Maven 3.6.3 ou superior.
 
@@ -18,14 +20,12 @@ mvn test
 mvn spring-boot:run
 ```
 
-A aplicação inicia em `http://localhost:8080`. Ainda não há tabuleiro nem endpoints de partidas. Não há recursos AWS criados.
-
 ## Próximas etapas
 
-1. Modelo de partida, regras e testes de domínio.
-2. API de criação de partida e jogadas com controle de versão.
+1. Definir a variante de damas e implementar jogadas dentro do agregado Partida.
+2. Casos de uso e API com controle de versão.
 3. Persistência PostgreSQL e migrações.
-4. Frontend Angular e atualização dos jogadores.
-5. Terraform: VPC, subnets e rotas; depois aplicação, banco e DNS.
+4. Frontend Angular.
+5. Terraform para infraestrutura AWS, revendo plano e custos antes de provisionar.
 
-Antes de provisionar infraestrutura, revisar o `terraform plan` e os custos previstos. Não enviar credenciais nem arquivos de estado ao GitHub.
+Não enviar credenciais nem arquivos de estado ao GitHub.
