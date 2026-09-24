@@ -1,0 +1,11 @@
+target/
+.idea/
+*.iml
+.env
+.DS_Store
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
