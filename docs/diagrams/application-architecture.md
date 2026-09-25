@@ -27,7 +27,7 @@ flowchart TB
 |---|---|
 | Angular | Exibe tabuleiro, turno e versão; monta o lance completo e envia comando. Ao reconectar ou detectar lacuna de versão, consulta o estado atual. |
 | API REST | Recebe comandos e devolve confirmação ou erro ao autor da jogada; identifica o usuário autenticado. `GET /games/{id}` fornece o estado oficial. |
-| WebSocket | Após implementado, avisa os participantes de uma mudança confirmada. Não decide o turno nem garante histórico de eventos. |
+| WebSocket | Após implementado, entrega ao adversário o estado confirmado da partida para atualizar o tabuleiro sem novo GET. Não decide o turno nem garante histórico de eventos. |
 | `game/application` | Coordena carregamento, autorização, chamada ao domínio e persistência transacional; define portas para dependências externas. |
 | `game/domain` | `Game` valida um lance inteiro conforme as [regras brasileiras](../rules/README.md), atualiza tabuleiro e troca a vez. Independe de Spring e PostgreSQL. |
 | `game/infrastructure` | Adapta banco e transporte às portas da aplicação; atualiza o estado condicionalmente por `expectedVersion`. |
@@ -62,25 +62,23 @@ sequenceDiagram
 
 O domínio valida o lance antes da tentativa de gravação. A transação só confirma se a versão do banco ainda for a esperada; uma disputa entre requisições pode gerar conflito mesmo após a validação do domínio. A outbox entra no mesmo commit **quando for implementada**. A resposta da API informa ao autor que o estado foi persistido; não significa que o adversário já recebeu o aviso.
 
-### Adversário recebe o aviso
+### Adversário recebe o estado confirmado
 
-```mermaid
+\`\`\`mermaid
 sequenceDiagram
     participant O as Worker de outbox
     participant R as ElastiCache
     participant W as ECS WebSocket
     participant B as Adversario no Angular
-    participant API as ECS API REST
-    O->>R: Publica gameId e nova versao
-    R->>W: Distribui aviso para tarefa conectada
-    W-->>B: WebSocket avisa gameId e version
-    opt Precisa atualizar o tabuleiro
-        B->>API: HTTP GET games por id
-        API-->>B: Estado oficial da partida
-    end
-```
+    O->>R: Publica evento com gameId, version e estado
+    R->>W: Distribui evento entre tarefas
+    W-->>B: Envia estado confirmado pelo WebSocket
+    B->>B: Aplica somente se version for a proxima
+\`\`\`
 
-Este segundo fluxo é **futuro**. O worker lê o evento já confirmado; ElastiCache distribui o aviso entre tarefas, sem gravar a jogada novamente. O navegador do adversário **recebe o aviso do ECS WebSocket** e, se precisar atualizar o tabuleiro, faz um **novo HTTP GET para a API REST**. A API devolve o estado oficial ao navegador; ela não fica no meio da entrega do aviso WebSocket. Em caso de perda do aviso ou reconexão, a mesma consulta recupera a versão oficial. Outras abas do autor também podem receber o evento; a aba que já recebeu a resposta da API ignora a mesma versão.
+Este segundo fluxo é **futuro**. A transação da jogada grava na outbox um evento com um **snapshot derivado do estado confirmado** (por exemplo, `gameId`, `version`, `board`, `currentPlayerId` e `status`). Depois do commit, o worker lê esse evento e o publica no ElastiCache; a tarefa que mantém o WebSocket entrega o snapshot ao adversário. **O WebSocket não chama a API a cada jogada**, e o worker não grava novamente a partida. O PostgreSQL continua sendo a fonte oficial.
+
+O Angular aplica somente versões novas e consecutivas. Se receber uma versão repetida, ignora; se detectar uma lacuna ou reconectar, chama `GET /games/{id}` para recuperar o estado oficial. A aba do autor já recebeu o resultado da API; outras abas ou dispositivos podem receber o mesmo evento e aplicar a versão normalmente. Não incluir dados privados de outros jogadores no snapshot enviado à sala da partida.
 
 ## Componentes AWS e sua finalidade
 
@@ -99,6 +97,6 @@ Este é o **mapeamento planejado** dos componentes da aplicação para a implant
 | Security Groups | VPC | Limitam tráfego ao necessário entre ALB, ECS e banco. Restringir acesso direto ao ALB para não contornar o WAF da borda. |
 | NAT Gateway ou VPC endpoints | Conforme a necessidade | Permitem saída controlada das tarefas privadas para dependências externas ou serviços AWS. |
 | CloudWatch, IAM e Secrets Manager | Região AWS | Monitoramento, permissões mínimas e gestão de credenciais. |
-| ElastiCache e worker de outbox | Etapa futura, subnets privadas | Propagam avisos entre tarefas WebSocket; a outbox no banco permite retentar a publicação. ElastiCache não controla a vez. |
+| ElastiCache e worker de outbox | Etapa futura, subnets privadas | Distribuem o snapshot confirmado entre tarefas WebSocket; a outbox no banco permite retentar a publicação. ElastiCache não controla a vez. |
 
 **RDS PostgreSQL Multi-AZ** é o alvo inicial de implantação. **Aurora PostgreSQL Global Database** pertence ao estudo de expansão entre regiões; trocar de banco exige análise de custo, carga, migração e recuperação. Nenhum desses serviços foi provisionado por este documento.
