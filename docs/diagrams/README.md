@@ -5,5 +5,6 @@
 - [Fluxo de um lance](move-flow.md): validação, versão, idempotência e troca da vez (planejado).
 - [Implantação AWS](aws-deployment.md): VPC, subnets, ECS, RDS e entrega do frontend (arquitetura alvo).
 - [Implantação AWS global](aws-deployment-global.md): estudo para grande escala, WAF, CloudFront, consistência e recuperação entre regiões (hipotético).
+- [Tráfego global](global-traffic.md): visão simples dos pontos de presença da CDN e das regiões da aplicação.
 
 Os diagramas usam Mermaid e podem ser visualizados diretamente no GitHub. As propostas futuras estão identificadas em cada documento.
