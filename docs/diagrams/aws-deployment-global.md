@@ -72,8 +72,8 @@ sequenceDiagram
     participant DB as Aurora writer
     participant O as Worker de outbox
     participant W as ECS: WebSocket
-    P->>API: lance completo + expectedVersion + clientMoveId
-    API->>DB: transação: validar versão; estado + histórico + outbox
+    P->>API: Envia lance completo com expectedVersion e clientMoveId
+    API->>DB: Salva estado, historico e evento na mesma transacao
     alt comando aceito
         DB-->>API: commit, nova versão
         API-->>P: estado confirmado
