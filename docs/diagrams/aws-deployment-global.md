@@ -8,12 +8,14 @@
 flowchart TB
     U["Jogadores no mundo"]
     DNS["Route 53: DNS do domínio"]
-    EDGE["CloudFront: CDN e entrada HTTPS/WSS"]
-    WAF["AWS WAF: Web ACL global"]
+    subgraph CDN["Borda global — CDN"]
+        EDGE["CloudFront: pontos de presença, cache e HTTPS/WSS"]
+        WAF["AWS WAF: Web ACL global"]
+        WAF -. "associada à distribuição" .-> EDGE
+    end
     S3[("S3 privado: build Angular")]
     U --> DNS --> EDGE
-    WAF -. "protege a distribuição" .-> EDGE
-    EDGE -->|"assets: cache"| S3
+    EDGE -->|"assets: cache; origem em falta de cache"| S3
     EDGE -->|"API: sem cache; WebSocket: upgrade"| ALB
 
     subgraph VPC["VPC — região principal; 2 ou mais AZs"]
@@ -38,7 +40,7 @@ flowchart TB
     end
 ```
 
-**Fluxo:** `damas.highonline.com.br` resolve para CloudFront; comportamentos distintos servem `/assets/*` do S3, e `/api/*` e `/ws/*` do ALB. Não fazer cache de respostas personalizadas nem de comandos de jogada. WebSocket atravessa CloudFront até o ALB com políticas de cabeçalhos e timeouts apropriadas. O WAF é uma **associação à distribuição**, representada por linha pontilhada, não uma instância na VPC.
+**Fluxo:** `damas.highonline.com.br` resolve para CloudFront; comportamentos distintos servem `/assets/*` do S3, e `/api/*` e `/ws/*` do ALB. Não fazer cache de respostas personalizadas nem de comandos de jogada. WebSocket atravessa CloudFront até o ALB com políticas de cabeçalhos e timeouts apropriadas. A caixa **Borda global — CDN** representa a rede de pontos de presença do CloudFront, não uma subnet ou um recurso adicional a contratar. O WAF é uma **associação à distribuição**, representada por linha pontilhada, não uma instância na VPC.
 
 | Componente | Local | Função e atenção operacional |
 |---|---|---|
