@@ -1,6 +1,6 @@
 # Backend — modelo de domínio
 
-Pacotes agrupados por funcionalidade; cada contexto terá suas próprias camadas quando elas forem necessárias:
+Pacotes agrupados por funcionalidade; cada contexto terá suas próprias camadas quando forem necessárias:
 
 ```text
 br.com.highonline.checkers
@@ -18,6 +18,6 @@ br.com.highonline.checkers
         └── PlayerId.java   # value object
 ```
 
-`Game` referencia jogadores pelos seus `PlayerId`, sem carregar entidades do agregado `Player`. Duas pessoas distintas são necessárias para iniciar uma partida; as pretas começam, com 12 peças para cada lado. `Board` não expõe coleção mutável.
+`Game` referencia jogadores por `PlayerId`, sem carregar o agregado `Player`. Duas pessoas distintas são necessárias para iniciar uma partida; **as brancas começam**, com 12 peças para cada lado. `Board` não expõe coleção mutável.
 
-Ainda não há movimento de peças nem mudança de turno. Na próxima etapa, vamos definir a variante de damas, a entidade `Move` dentro da partida e as regras que atualizam tabuleiro e vez numa única operação do agregado. Os pacotes `application` e `infrastructure` serão adicionados quando houver casos de uso e persistência; não são pacotes globais por tipo.
+A variante escolhida é [damas brasileiras de 64 casas](../docs/rules/README.md). Ainda não há movimento de peças nem mudança de turno. Os pacotes `application` e `infrastructure` serão adicionados por funcionalidade quando houver casos de uso e persistência.

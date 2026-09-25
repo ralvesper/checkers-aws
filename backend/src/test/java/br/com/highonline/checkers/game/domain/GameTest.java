@@ -6,14 +6,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class GameTest {
     @Test
-    void startsWithTwelvePiecesPerPlayerAndBlackToMove() {
+    void startsWithTwelvePiecesPerPlayerAndWhiteToMove() {
         PlayerId black = PlayerId.newId(), white = PlayerId.newId();
         Game game = Game.start(black, white);
 
         assertNotNull(game.id());
         assertEquals(black, game.blackPlayerId());
         assertEquals(white, game.whitePlayerId());
-        assertEquals(Color.BLACK, game.turn());
+        assertEquals(Color.WHITE, game.turn());
         assertEquals(0, game.version());
         assertEquals(12, game.board().count(Color.BLACK));
         assertEquals(12, game.board().count(Color.WHITE));

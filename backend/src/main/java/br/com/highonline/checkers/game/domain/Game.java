@@ -24,7 +24,7 @@ public final class Game {
         if (blackPlayerId == null || whitePlayerId == null || blackPlayerId.equals(whitePlayerId)) {
             throw new IllegalArgumentException("A game requires two different players");
         }
-        return new Game(GameId.newId(), blackPlayerId, whitePlayerId, Board.initial(), Color.BLACK, 0);
+        return new Game(GameId.newId(), blackPlayerId, whitePlayerId, Board.initial(), Color.WHITE, 0);
     }
 
     public GameId id() { return id; }
