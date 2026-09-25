@@ -64,7 +64,7 @@ O domínio valida o lance antes da tentativa de gravação. A transação só co
 
 ### Adversário recebe o estado confirmado
 
-\`\`\`mermaid
+```mermaid
 sequenceDiagram
     participant O as Worker de outbox
     participant R as ElastiCache
@@ -74,7 +74,7 @@ sequenceDiagram
     R->>W: Distribui evento entre tarefas
     W-->>B: Envia estado confirmado pelo WebSocket
     B->>B: Aplica somente se version for a proxima
-\`\`\`
+```
 
 Este segundo fluxo é **futuro**. A transação da jogada grava na outbox um evento com um **snapshot derivado do estado confirmado** (por exemplo, `gameId`, `version`, `board`, `currentPlayerId` e `status`). Depois do commit, o worker lê esse evento e o publica no ElastiCache; a tarefa que mantém o WebSocket entrega o snapshot ao adversário. **O WebSocket não chama a API a cada jogada**, e o worker não grava novamente a partida. O PostgreSQL continua sendo a fonte oficial.
 
