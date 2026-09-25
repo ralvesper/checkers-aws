@@ -65,28 +65,43 @@ A implementação e as cotas dependem da carga medida. Planejar orçamento e ala
 
 ## 2. Consistência de uma partida
 
+### Confirmação da jogada
+
 ```mermaid
 sequenceDiagram
-    participant P as Jogador
-    participant API as ECS: API
+    participant A as Autor da jogada
+    participant API as ECS API
     participant DB as Aurora writer
-    participant O as Worker de outbox
-    participant W as ECS: WebSocket
-    P->>API: Envia lance completo com expectedVersion e clientMoveId
-    API->>DB: Salva estado, historico e evento na mesma transacao
+    A->>API: Envia lance e expectedVersion
+    API->>DB: Grava estado, historico e outbox na mesma transacao
     alt comando aceito
-        DB-->>API: commit, nova versão
-        API-->>P: estado confirmado
-        O->>DB: lê evento confirmado
-        O->>W: publica aviso entre tarefas
-        W-->>P: novo estado ou versão
+        DB-->>API: Commit com nova versao
+        API-->>A: Confirma resultado da jogada
     else conflito ou reenvio
-        DB-->>API: estado atual ou resultado anterior
-        API-->>P: conflito ou resposta idempotente
+        DB-->>API: Estado atual ou resultado anterior
+        API-->>A: Conflito ou resposta idempotente
     end
 ```
 
-**O agregado `Game` valida o lance inteiro** conforme [regras brasileiras](../rules/README.md). Atualização condicional por `game.version` impede duas jogadas concorrentes sobre a mesma versão; `clientMoveId` único por partida protege reenvios. O histórico e a outbox entram na transação do estado. A entrega WebSocket pode atrasar ou duplicar; cada cliente compara versões e, ao reconectar, consulta `GET /games/{id}` na fonte oficial. A outbox reduz o risco de commit sem publicação, mas requer monitorar tentativas, atraso e repetição.
+O **Aurora writer confirma o commit à API**, que responde ao **autor da jogada**. Isso informa que o lance foi persistido; não significa que o adversário já atualizou sua tela.
+
+### Aviso aos outros clientes
+
+```mermaid
+sequenceDiagram
+    participant O as Worker de outbox
+    participant R as ElastiCache
+    participant W as ECS WebSocket
+    participant B as Adversario
+    O->>R: Publica gameId e nova versao
+    R->>W: Distribui aviso para tarefa conectada
+    W-->>B: Informa que a partida mudou
+    B->>W: Consulta estado se necessario
+```
+
+O worker lê **o evento já confirmado na outbox** e publica um aviso para alcançar a tarefa que mantém o WebSocket do adversário. O aviso pode levar apenas `gameId` e `version`; o cliente busca o estado quando necessário. Também é possível incluir um resumo da jogada, desde que se trate como **cópia derivada**. A tarefa do autor pode receber o aviso para sincronizar outras abas ou dispositivos, mas a aba que enviou o lance já recebeu a resposta da API e deve ignorar eventos com a mesma versão. **Não há uma segunda gravação da jogada no banco.**
+
+**O agregado `Game` valida o lance inteiro** conforme [regras brasileiras](../rules/README.md). Atualização condicional por `game.version` impede duas jogadas concorrentes sobre a mesma versão; `clientMoveId` único por partida protege reenvios. O histórico e a outbox entram na transação do estado. A entrega WebSocket pode atrasar, se perder ou duplicar; cada cliente compara versões e, ao reconectar, consulta `GET /games/{id}` na fonte oficial. A outbox reduz o risco de commit sem publicação, mas requer monitorar tentativas, atraso e repetição. Como Pub/Sub é efêmero, a sincronização após reconexão sempre usa o estado persistido.
 
 Para escalar writes além de um writer, **medir primeiro**. Se necessário, particionar partidas por `gameId` entre bancos ou regiões proprietárias; cada partida permanece com **um único writer**. Isso exige roteamento, migração de partidas e estratégia de falha próprios — não é consequência automática de adicionar leitores ao Aurora.
 
