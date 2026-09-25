@@ -38,6 +38,32 @@ flowchart TB
 
 **Se a aplicação passar a operar em três regiões**, esse será outro desenho: cada região terá seus próprios ALB/ECS (e possivelmente dados), com roteamento e propriedade de partidas definidos. Direcionar o usuário ao servidor mais próximo sem considerar onde a partida é escrita pode aumentar a latência ou produzir leituras defasadas. Uma alternativa a estudar é associar cada `gameId` a uma região proprietária e manter ambos os jogadores dessa partida nela. Isso requer roteamento, reatribuição e recuperação explícitos.
 
+## Exemplo: partida pertencente ao Brasil
+
+Criar uma partida **a partir do Brasil não escolhe automaticamente a região brasileira**. Se adotarmos propriedade regional, o caso de uso de criação escolhe e grava `homeRegion = sa-east-1` junto ao `gameId`. O roteamento das próximas requisições precisa consultar ou carregar essa associação. A URL global e o POP próximo ao jogador, sozinhos, não descobrem a região proprietária.
+
+```mermaid
+flowchart TB
+    JB["Jogador no Brasil"]
+    JU["Jogador nos EUA"]
+    PB["CloudFront: POP próximo no Brasil"]
+    PU["CloudFront: POP próximo nos EUA"]
+    HOME["Região proprietária sa-east-1: API + writer"]
+    JB --> PB --> HOME
+    JU --> PU --> HOME
+    HOME -->|"atualização confirmada"| PB
+    HOME -->|"atualização confirmada"| PU
+```
+
+| Situação | Caminho de uma jogada | Consequência |
+|---|---|---|
+| Dois jogadores nos EUA; partida atribuída a `us-east-1` | Cada jogador → POP próximo → API/writer nos EUA | Ambos acessam uma origem relativamente próxima. |
+| Dois jogadores nos EUA; partida atribuída a `sa-east-1` | Cada jogador → POP próximo → API/writer no Brasil | Ambos percorrem a distância até o Brasil; a CDN não processa a jogada. |
+| Um jogador no Brasil e outro nos EUA; partida atribuída a `sa-east-1` | Cada jogador → seu POP próximo → **a mesma** API/writer no Brasil | O jogador nos EUA pode perceber latência maior. O resultado volta pelo caminho de cada conexão. |
+| Um jogador no Brasil e outro nos EUA; partida atribuída a `us-east-1` | Cada jogador → seu POP próximo → **a mesma** API/writer nos EUA | O jogador no Brasil pode perceber latência maior. |
+
+Em qualquer caso, ambos observam uma única versão oficial da partida. O Angular e outros arquivos estáticos podem vir do cache próximo, mas comandos e atualizações WebSocket atravessam a rede até a região responsável. Para escolher a região na criação, estudar localização dos **dois** jogadores, latência medida, disponibilidade e regras de residência de dados; uma partida já iniciada não deve mudar de writer sem migração controlada. Se houver só uma região implantada, todas as partidas usam essa região, independentemente de onde o criador esteja.
+
 O failover de *origem* nativo do CloudFront cobre solicitações GET/HEAD/OPTIONS, não o POST que envia uma jogada. Recuperação de escrita exige promover o banco e mudar o roteamento da API de maneira coordenada; não presumir failover automático do comando.
 
 ## Referências oficiais
