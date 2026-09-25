@@ -1,5 +1,8 @@
 # Diagramas
 
-- [Modelo de domínio](domain-model.md): estado atual do código.
+- [Modelo de domínio](domain-model.md): agregados e value objects implementados.
+- [Arquitetura da aplicação](application-architecture.md): camadas por funcionalidade e limites entre Angular, Spring Boot e banco (planejado).
+- [Fluxo de um lance](move-flow.md): validação, versão, idempotência e troca da vez (planejado).
+- [Implantação AWS](aws-deployment.md): VPC, subnets, ECS, RDS e entrega do frontend (arquitetura alvo).
 
-Quando implementarmos as próximas etapas, adicionaremos aqui os fluxos de jogadas, persistência e implantação AWS. Preferimos Mermaid para permitir revisão do diagrama junto ao código.
+Os diagramas usam Mermaid e podem ser visualizados diretamente no GitHub. As propostas futuras estão identificadas em cada documento.
