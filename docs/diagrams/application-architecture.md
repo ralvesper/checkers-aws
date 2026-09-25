@@ -69,16 +69,18 @@ sequenceDiagram
     participant O as Worker de outbox
     participant R as ElastiCache
     participant W as ECS WebSocket
-    participant B as Adversario
-    participant API as API de partidas
+    participant B as Adversario no Angular
+    participant API as ECS API REST
     O->>R: Publica gameId e nova versao
     R->>W: Distribui aviso para tarefa conectada
-    W-->>B: Informa que a partida mudou
-    B->>API: GET estado se necessario
-    API-->>B: Estado oficial
+    W-->>B: WebSocket avisa gameId e version
+    opt Precisa atualizar o tabuleiro
+        B->>API: HTTP GET games por id
+        API-->>B: Estado oficial da partida
+    end
 ```
 
-Este segundo fluxo é **futuro**. O worker lê o evento já confirmado; ElastiCache distribui o aviso entre tarefas, sem gravar a jogada novamente. O adversário pode buscar o estado por REST. Em caso de perda do aviso ou reconexão, essa consulta recupera a versão oficial. Outras abas do autor também podem receber o evento; a aba que já recebeu a resposta da API ignora a mesma versão.
+Este segundo fluxo é **futuro**. O worker lê o evento já confirmado; ElastiCache distribui o aviso entre tarefas, sem gravar a jogada novamente. O navegador do adversário **recebe o aviso do ECS WebSocket** e, se precisar atualizar o tabuleiro, faz um **novo HTTP GET para a API REST**. A API devolve o estado oficial ao navegador; ela não fica no meio da entrega do aviso WebSocket. Em caso de perda do aviso ou reconexão, a mesma consulta recupera a versão oficial. Outras abas do autor também podem receber o evento; a aba que já recebeu a resposta da API ignora a mesma versão.
 
 ## Componentes AWS e sua finalidade
 
