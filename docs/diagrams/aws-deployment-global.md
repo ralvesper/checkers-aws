@@ -65,11 +65,11 @@ A implementação e as cotas dependem da carga medida. Planejar orçamento e ala
 
 ## 2. Consistência de uma partida
 
-### Jogador A envia e recebe a confirmação
+### Confirmação ao autor da jogada
 
 ```mermaid
 sequenceDiagram
-    participant A as Jogador A
+    participant A as Autor da jogada
     participant API as ECS API
     participant DB as Aurora writer
     A->>API: Envia lance e expectedVersion
@@ -83,16 +83,16 @@ sequenceDiagram
     end
 ```
 
-O **Aurora writer confirma o commit à API**, que responde ao **Jogador A**. Isso informa que o lance foi persistido; não significa que o Jogador B já atualizou sua tela.
+O **Aurora writer confirma o commit à API**, que responde ao **autor da jogada**. Isso informa que o lance foi persistido; não significa que o adversário já atualizou sua tela.
 
-### Jogador B recebe o aviso
+### Aviso ao adversário
 
 ```mermaid
 sequenceDiagram
     participant O as Worker de outbox
     participant R as ElastiCache
     participant W as ECS WebSocket
-    participant B as Jogador B
+    participant B as Adversario
     participant API as ECS API
     O->>R: Publica gameId e nova versao
     R->>W: Distribui aviso para tarefa conectada
@@ -101,7 +101,7 @@ sequenceDiagram
     API-->>B: Estado oficial
 ```
 
-O worker lê **o evento já confirmado na outbox** e publica um aviso para alcançar a tarefa que mantém o WebSocket do Jogador B. O aviso pode levar apenas `gameId` e `version`; o cliente busca o estado quando necessário. Também é possível incluir um resumo da jogada, desde que se trate como **cópia derivada**. Outras abas ou dispositivos do Jogador A também podem receber o aviso, mas a aba que enviou o lance já recebeu a resposta da API e deve ignorar eventos com a mesma versão. **Não há uma segunda gravação da jogada no banco.**
+O worker lê **o evento já confirmado na outbox** e publica um aviso para alcançar a tarefa que mantém o WebSocket do adversário. O aviso pode levar apenas `gameId` e `version`; o cliente busca o estado quando necessário. Também é possível incluir um resumo da jogada, desde que se trate como **cópia derivada**. Outras abas ou dispositivos do autor da jogada também podem receber o aviso, mas a aba que enviou o lance já recebeu a resposta da API e deve ignorar eventos com a mesma versão. **Não há uma segunda gravação da jogada no banco.**
 
 **O agregado `Game` valida o lance inteiro** conforme [regras brasileiras](../rules/README.md). Atualização condicional por `game.version` impede duas jogadas concorrentes sobre a mesma versão; `clientMoveId` único por partida protege reenvios. O histórico e a outbox entram na transação do estado. A entrega WebSocket pode atrasar, se perder ou duplicar; cada cliente compara versões e, ao reconectar, consulta `GET /games/{id}` na fonte oficial. A outbox reduz o risco de commit sem publicação, mas requer monitorar tentativas, atraso e repetição. Como Pub/Sub é efêmero, a sincronização após reconexão sempre usa o estado persistido.
 
