@@ -93,10 +93,12 @@ sequenceDiagram
     participant R as ElastiCache
     participant W as ECS WebSocket
     participant B as Adversario
+    participant API as ECS API
     O->>R: Publica gameId e nova versao
     R->>W: Distribui aviso para tarefa conectada
     W-->>B: Informa que a partida mudou
-    B->>W: Consulta estado se necessario
+    B->>API: GET estado se necessario
+    API-->>B: Estado oficial
 ```
 
 O worker lê **o evento já confirmado na outbox** e publica um aviso para alcançar a tarefa que mantém o WebSocket do adversário. O aviso pode levar apenas `gameId` e `version`; o cliente busca o estado quando necessário. Também é possível incluir um resumo da jogada, desde que se trate como **cópia derivada**. A tarefa do autor pode receber o aviso para sincronizar outras abas ou dispositivos, mas a aba que enviou o lance já recebeu a resposta da API e deve ignorar eventos com a mesma versão. **Não há uma segunda gravação da jogada no banco.**
