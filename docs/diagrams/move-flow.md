@@ -29,6 +29,6 @@ sequenceDiagram
 - O servidor confere se o jogador participa da partida, se é sua vez, se a partida está ativa e se o lance obedece às regras, inclusive captura obrigatória e lei da maioria.
 - `expectedVersion` corresponde à versão exibida ao cliente; a gravação só ocorre se `game.version` ainda for essa versão. Estado, próxima vez, versão e histórico são confirmados na mesma transação.
 - `clientMoveId` deve ser único por partida. Um reenvio devolve o resultado já confirmado sem aplicar o lance novamente; um identificador repetido com conteúdo diferente deve ser rejeitado.
-- Ao receber conflito ou reconectar, o cliente consulta o estado atual. Uma futura notificação WebSocket só anuncia alterações já confirmadas.
+- Ao receber conflito, detectar uma lacuna de versão ou reconectar, o cliente consulta o estado atual. No fluxo futuro, o WebSocket entrega o snapshot confirmado da partida após o commit; o cliente aplica apenas versões novas e consecutivas.
 
 Detalhes de autenticação, empate e contrato HTTP serão definidos em etapas posteriores.
