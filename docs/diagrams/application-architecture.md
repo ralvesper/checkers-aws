@@ -1,6 +1,6 @@
 # Arquitetura da aplicação
 
-> **Estado atual:** o backend contém o modelo inicial de domínio. Os casos de uso, API de partidas, Angular, persistência e infraestrutura AWS abaixo são uma proposta para as próximas etapas. O [desenho global](aws-deployment-global.md) é um estudo de escala posterior.
+> **Estado atual:** o backend contém o domínio com lances completos, controle de turno, versão e vitória. Os casos de uso, API de partidas, Angular, persistência e infraestrutura AWS abaixo são uma proposta para as próximas etapas. O [desenho global](aws-deployment-global.md) é um estudo de escala posterior.
 
 ## Componentes da aplicação
 
@@ -100,3 +100,4 @@ Este é o **mapeamento planejado** dos componentes da aplicação para a implant
 | ElastiCache e worker de outbox | Etapa futura, subnets privadas | Distribuem o snapshot confirmado entre tarefas WebSocket; a outbox no banco permite retentar a publicação. ElastiCache não controla a vez. |
 
 **RDS PostgreSQL Multi-AZ** é o alvo inicial de implantação. **Aurora PostgreSQL Global Database** pertence ao estudo de expansão entre regiões; trocar de banco exige análise de custo, carga, migração e recuperação. Nenhum desses serviços foi provisionado por este documento.
+
