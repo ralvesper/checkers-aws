@@ -10,6 +10,18 @@ public final class Board {
         this.pieces = Map.copyOf(pieces);
     }
 
+    // Package-private position factory for rules and domain scenarios.
+    static Board of(Map<Square, Piece> pieces) {
+        if (pieces == null || pieces.keySet().stream().anyMatch(square -> !square.isDark())) {
+            throw new IllegalArgumentException("Pieces must occupy dark squares");
+        }
+        return new Board(pieces);
+    }
+
+    Map<Square, Piece> pieces() {
+        return pieces;
+    }
+
     public static Board initial() {
         Map<Square, Piece> pieces = new HashMap<>();
         for (int row = 0; row < 8; row++) {
@@ -33,3 +45,4 @@ public final class Board {
         return pieces.values().stream().filter(piece -> piece.color() == color).count();
     }
 }
+
