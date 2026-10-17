@@ -8,6 +8,8 @@ target/
 *.tfstate.*
 *.tfvars
 *.tfvars.json
+*.plan
+*.tfplan
 crash.log
 node_modules/
 dist/

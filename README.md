@@ -1,44 +1,56 @@
 # Checkers AWS
 
-Jogo de damas online construído em etapas com Java 25, Spring Boot, Angular e Terraform.
+MVP local de damas brasileiras com Java 25, Spring Boot, Angular 22, PostgreSQL e WebSocket.
 
-```text
-backend/         API e regras do jogo (Spring Boot)
-frontend/        aplicação Angular (etapa posterior)
-infrastructure/  infraestrutura AWS em Terraform (etapa posterior)
-```
-
-## Etapa atual: domínio jogável, API REST e PostgreSQL local
-
-O domínio está em [backend/README.md](backend/README.md): agregados Partida e Jogador, tabuleiro e lances completos de damas brasileiras. Inclui movimento, captura obrigatória e múltipla, lei da maioria, promoção e vitória. A [API REST local](docs/api.md) cria e consulta partidas e aceita lances com controle de versão e idempotência. O perfil padrão usa memória; o perfil [local-postgres](docs/postgresql.md) persiste estado e histórico com JDBC e migrações Flyway. O frontend Angular já permite jogar com dois participantes; a infraestrutura AWS será preparada em etapa própria. Empates e relógio ficam para uma etapa posterior.
-
-Requisitos: JDK 25 e Maven 3.6.3 ou superior.
+## Rodar com Docker
 
 ```bash
-cd backend
-mvn test
-mvn spring-boot:run
+cp .env.example .env
+# Edite .env e escolha a senha local.
+bash scripts/dev.sh up
 ```
 
-## Próximas etapas
+No Windows, copie o mesmo arquivo e execute `./scripts/dev.ps1 up` no PowerShell.
+Abra http://localhost:8081, crie uma partida e abra o convite do adversário em outra aba/navegador.
+Para parar preservando o banco: `bash scripts/dev.sh down` ou `./scripts/dev.ps1 down`.
+Veja [execução completa](docs/running.md), incluindo desenvolvimento sem containers e remoção de dados.
 
-1. Revisar o recorte jogável de damas brasileiras e validar a experiência de lance completo.
-2. Validar a API local e evoluir a identidade para autenticação real antes de hospedar.
-3. Validar persistência, concorrência e reenvio no perfil PostgreSQL local.
-4. Frontend Angular.
-5. Terraform para infraestrutura AWS, revendo plano e custos antes de provisionar.
+## Entregue
 
-Não enviar credenciais nem arquivos de estado ao GitHub.
+- Domínio puro: movimento de pedras/damas, captura obrigatória e múltipla, lei da maioria, coroação e vitória.
+- API REST: criar/consultar partida e enviar um lance completo; turno, versão e reenvio idempotente.
+- PostgreSQL: migrações Flyway, estado e histórico na mesma transação, controle otimista entre conexões.
+- Angular: tabuleiro responsivo, convite, orientação por jogador, seleção de caminhos e confirmação.
+- WebSocket: snapshots confirmados, isolamento de salas, reconexão e recuperação por REST.
+- Docker Compose: frontend Nginx, API e banco com volume persistente, saúde e scripts WSL/PowerShell.
+- Terraform: rede em duas AZs e aplicação regional opcional com ECS, RDS, ALB HTTPS, S3/CloudFront e WAF.
+- CI: testes Java/PostgreSQL, frontend, navegadores, containers e Terraform simulado.
 
+## Organização
 
-## Interface
+| Pasta | Conteúdo |
+|---|---|
+| backend | Domínio, aplicação, REST, WebSocket, JDBC e migrações |
+| frontend | Interface Angular e testes de navegador |
+| infrastructure | Terraform em etapas; nenhum recurso provisionado neste trabalho |
+| scripts | Iniciar, parar, consultar e remover containers locais |
+| docs | Contratos, regras, operação e decisões de arquitetura |
 
-Com a API em execução, abra outro terminal:
+## Limites do MVP
 
-```bash
-cd frontend
-npm ci
-npm start
-```
+A identidade por convite/cabeçalho é de protótipo local, sem login seguro. Empates oficiais, relógio,
+matchmaking, ranking, bot e histórico navegável ficam para evolução. O WebSocket atende uma instância;
+antes de escalar horizontalmente, implementar outbox e distribuição de eventos. O perfil padrão do backend
+usa memória; o Compose usa PostgreSQL. Não declarar aderência completa às regras oficiais.
 
-Abra http://localhost:4200, crie uma partida e compartilhe o convite do adversário. Veja [frontend/README.md](frontend/README.md).
+Terraform validado não significa AWS implantada. [Infraestrutura](infrastructure/README.md) documenta entradas,
+restrição por IP, custos, plano e teardown. Não há apply nem deploy automático.
+
+## Documentação
+
+- [Rodar e testar](docs/running.md)
+- [API REST](docs/api.md) e [requests.http](backend/requests.http)
+- [PostgreSQL](docs/postgresql.md) e [tempo real](docs/realtime.md)
+- [Regras](docs/rules/README.md), [roadmap](docs/roadmap.md) e [diagramas](docs/diagrams/README.md)
+
+Nunca enviar credenciais, arquivos .env, planos ou estado Terraform ao GitHub.

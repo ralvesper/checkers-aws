@@ -1,0 +1,15 @@
+variable "name" { type = string }
+variable "region" { type = string }
+variable "vpc_id" { type = string }
+variable "public_subnets" { type = list(string) }
+variable "application_subnets" { type = list(string) }
+variable "data_subnets" { type = list(string) }
+variable "backend_image" { type = string }
+variable "api_hostname" { type = string }
+variable "route53_zone_id" { type = string }
+variable "certificate_arn" { type = string }
+variable "trusted_ipv4_cidrs" { type = list(string) }
+variable "db_instance_class" { type = string }
+variable "db_multi_az" { type = bool }
+variable "db_deletion_protection" { type = bool }
+variable "final_snapshot_identifier" { type = string }

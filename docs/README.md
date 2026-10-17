@@ -7,3 +7,8 @@ Este diretório reúne decisões funcionais e diagramas do projeto.
 - [Diagramas](diagrams/README.md): modelo atual, arquitetura da aplicação, fluxo de lance e implantação AWS planejada.
 
 A implementação avançará em etapas. Diagramas de componentes futuros são propostas, não recursos já implantados.
+
+
+- [Executar o MVP](running.md)
+- [API REST](api.md), [PostgreSQL](postgresql.md), [WebSocket](realtime.md)
+- [Roadmap e limites](roadmap.md)
