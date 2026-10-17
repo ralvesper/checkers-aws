@@ -1,35 +1,34 @@
-# API REST local
+# API REST — sessões de visitante
 
-Execute `mvn spring-boot:run` em `backend/` com Java 25. O perfil padrão é `local`.
-Nesse perfil, o adaptador usa memória: estado e recibos são perdidos ao reiniciar e não são compartilhados entre processos.
-O perfil alternativo [local-postgres](postgresql.md) mantém o mesmo contrato com estado e recibos duráveis no PostgreSQL.
-Os endpoints existem somente nesses dois perfis de desenvolvimento.
+O backend expõe o contrato nos perfis local (memória) e local-postgres (durável). O frontend/Nginx usa
+`/api` como prefixo externo; diretamente no backend os caminhos abaixo não têm esse prefixo.
 
-## Identidade no protótipo
+## Sessão e assentos
 
-Todas as operações exigem `X-Player-Id` com UUID. O chamador pode escolher esse valor: **não é autenticação**.
-Este contrato é destinado ao desenvolvimento local. Antes de hospedar, substituir a identidade pelo principal autenticado,
-implementar armazenamento durável e configurar os endpoints fora do perfil local.
-Não há cadastro de jogadores nesta etapa: os dois IDs distintos são informados na criação.
+1. `POST /sessions` com `{}` retorna 201 e `{ "token": "...", "expiresAt": 1234567890 }`.
+2. Envie `Authorization: Bearer TOKEN` nos pedidos seguintes. O token é emitido e assinado pelo servidor,
+   expira em 30 dias e não pode ser substituído por um UUID. `X-Player-Id` não autoriza nenhuma operação.
+3. `POST /games` com `{}` cria os dois IDs no servidor, vincula as brancas à sessão e retorna 201,
+   Location e `{ "game": { ... }, "invitation": "..." }`. O convite é devolvido somente na criação.
+4. Outro visitante cria sua própria sessão e envia `POST /games/{id}/join` com `{ "invitation": "..." }`.
+   O primeiro aceite válido ocupa as pretas e consome o convite. Expira em 7 dias. Reenvio pela sessão
+   que já ocupou as pretas devolve o estado; outra sessão recebe 409. O dono das brancas não pode ocupar as pretas com a mesma sessão.
 
-## Endpoints
+Player IDs são identificadores públicos de assento, não credenciais. A ligação entre sessão e assento fica privada.
+Os vínculos e hashes dos convites são persistidos na tabela game_access no perfil PostgreSQL. Tokens não são gravados no banco.
+A aplicação usa capacidades anônimas; não oferece conta, recuperação de acesso nem prova da identidade da pessoa.
 
 | Método | Caminho | Resultado |
 |---|---|---|
-| POST | `/games` | Cria partida, devolve `201` e `Location`; ator deve ser um dos participantes |
-| GET | `/games/{id}` | Devolve o estado atual para um participante |
-| POST | `/games/{id}/moves` | Aplica um turno completo e devolve o estado confirmado |
+| POST | /sessions | Emite sessão de visitante; não exige credencial anterior |
+| POST | /games | Cria partida, assento das brancas e convite das pretas |
+| POST | /games/{id}/join | Aceita convite de uso único |
+| GET | /games/{id} | Estado da partida; X-Seat-Id indica o assento autorizado da sessão |
+| POST | /games/{id}/moves | Valida e aplica um lance completo do assento autorizado |
 
-Criação:
+Respostas de sessão e partida usam Cache-Control: no-store. Não armazenar tokens em logs ou URLs públicas.
 
-```json
-{
-  "blackPlayerId": "11111111-1111-4111-8111-111111111111",
-  "whitePlayerId": "22222222-2222-4222-8222-222222222222"
-}
-```
-
-Lance das brancas, usando seu ID no cabeçalho:
+## Lance
 
 ```json
 {
@@ -40,36 +39,35 @@ Lance das brancas, usando seu ID no cabeçalho:
 }
 ```
 
-Coordenadas entre 0 e 7, apenas casas escuras. Capturas múltiplas enviam todos os pousos no mesmo comando.
-A resposta contém `id`, jogadores, `turn`, `currentPlayerId`, `version`, `status`, `winner`, `pieces` e `legalMoves`.
-Cada peça contém `row`, `column`, `color` e `king`. `legalMoves` contém somente turnos completos permitidos.
-Na vitória, `currentPlayerId` é nulo, `legalMoves` é vazio e `winner` indica a cor vencedora.
+Coordenadas de 0 a 7 em casas escuras; todos os pousos da captura vão juntos. A resposta contém id,
+blackPlayerId, whitePlayerId, turn, currentPlayerId, version, status, winner, pieces e legalMoves.
+Em vitória, currentPlayerId é nulo e legalMoves é vazio. O servidor resolve o autor pela sessão,
+independentemente de IDs informados pelo cliente.
 
-## Versão e idempotência
-
-Cada lance aceito incrementa a versão uma vez. A atualização de estado e do recibo é atômica por partida.
-`clientMoveId` é único por partida. Repetir exatamente jogador, caminho, versão esperada e ID devolve
-o snapshot da primeira aceitação, inclusive se a partida já avançou depois. Consulte GET para recuperar
-o estado mais recente. O reenvio não aplica o lance novamente nem reduz a versão armazenada.
-Reutilizar o ID com outro conteúdo gera conflito. Comandos rejeitados não consomem o ID.
+Cada aceite incrementa a versão uma vez e grava estado e recibo na mesma transação. Repetir jogador autorizado,
+caminho, versão e clientMoveId devolve a resposta original sem reaplicar. Se a partida avançou, esse recibo pode
+ter versão antiga; consulte GET para obter o estado mais recente. ID reaproveitado com outro conteúdo gera conflito.
+Rejeições não consomem o clientMoveId.
 
 ## Erros
 
-Erros retornam `application/problem+json`, com `status`, `title`, `detail` e `code`.
+Formato application/problem+json com status, title, detail e code.
 
-| HTTP | `code` | Situação |
+| HTTP | code | Situação |
 |---|---|---|
-| 400 | INVALID_REQUEST | Corpo, UUID, coordenada ou cabeçalho inválido/ausente |
-| 403 | FORBIDDEN | Ator não participa da partida |
-| 404 | NOT_FOUND | Partida inexistente |
-| 409 | VERSION_CONFLICT | Estado usado pelo cliente está desatualizado |
-| 409 | COMMAND_CONFLICT | ID do comando reutilizado com conteúdo diferente |
-| 409 | WRONG_TURN | Participante tenta jogar fora da vez |
-| 409 | FINISHED | Novo comando em partida encerrada |
-| 422 | INVALID_MOVE | Caminho bem formado que viola as regras do jogo |
+| 400 | INVALID_REQUEST | Corpo ou coordenadas/caminho inválidos |
+| 401 | UNAUTHORIZED | Token ausente, adulterado ou expirado; WWW-Authenticate: Bearer |
+| 403 | FORBIDDEN | Sessão sem assento ou dono tentando aceitar o próprio convite |
+| 409 | INVITATION_UNAVAILABLE | Convite inválido, expirado ou usado por outra sessão |
+| 409 | VERSION_CONFLICT | Estado desatualizado |
+| 409 | COMMAND_CONFLICT | clientMoveId reutilizado com conteúdo diferente |
+| 409 | WRONG_TURN | Fora da vez |
+| 409 | FINISHED | Novo lance em partida encerrada |
+| 422 | INVALID_MOVE | Caminho bem formado que viola as regras |
 
-O perfil `local-postgres` grava estado, lances e recibos na mesma transação com controle otimista no banco.
-O [WebSocket](realtime.md) entrega snapshots confirmados entre os participantes em uma instância da API.
-Ainda não há endpoint de histórico, autenticação real, empates ou relógio.
+Partidas sem permissão, inclusive registros legados sem vínculo, não concedem acesso só por conhecer um ID.
+A camada interna ainda distingue NOT_FOUND, mas a verificação de assento pode retornar 403 antes dessa consulta.
 
-Exemplos executáveis: [backend/requests.http](../backend/requests.http).
+No WebSocket, use os subprotocolos `checkers.v1` e `guest.TOKEN`. O servidor seleciona checkers.v1,
+valida a sessão no handshake e resolve o assento da sala; credenciais não vão na query string.
+Veja [realtime.md](realtime.md), [Hostinger](hostinger.md) e [requests.http](../backend/requests.http).

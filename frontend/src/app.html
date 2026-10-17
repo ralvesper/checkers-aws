@@ -31,8 +31,10 @@
             @else { <button class="primary" [disabled]="!canConfirm() || busy()" (click)="confirm()">{{ busy() ? 'Enviando…' : 'Confirmar lance' }} <span>→</span></button> }
             <div class="actions"><button [disabled]="!origin() || !!pending() || busy()" (click)="undo()">Desfazer seleção</button><button [disabled]="busy()" (click)="load()">Atualizar</button></div>
             <div class="divider"></div>
+            @if (invitation()) {
             <button class="invite" (click)="copyInvite()">Copiar convite do adversário <span>↗</span></button>
             <input class="invite-url" aria-label="Link do adversário" [value]="invitation()" readonly (focus)="$any($event.target).select()">
+            }
             <div class="game-meta"><span>VERSÃO {{ game()!.version }}</span><span>{{ connection() === 'live' ? 'AO VIVO' : connection() === 'reconnecting' ? 'RECONECTANDO' : 'CONECTANDO' }}</span></div>
             @if (game()!.status === 'FINISHED') { <button class="secondary" (click)="create()">Nova partida</button> }
           }
@@ -43,5 +45,5 @@
       </aside>
     </div>
   </main>
-  <footer><span>FEITO PARA PENSAR À FRENTE.</span><span>Protótipo local · sem relógio ou regras de empate</span></footer>
+  <footer><span>© 2026 Rodrigo Alves Pereira. Todos os direitos reservados.</span><span>Demonstração experimental · sem relógio ou regras de empate</span></footer>
 </div>

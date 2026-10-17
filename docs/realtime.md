@@ -1,8 +1,10 @@
 # Atualização em tempo real
 
-O endpoint WebSocket `/games/{id}/stream?playerId={uuid}` envia snapshots confirmados da partida.
-A conexão valida se o jogador participa da sala. Assim como `X-Player-Id`, o parâmetro é identidade
-de protótipo, não autenticação. Somente os perfis de desenvolvimento expõem o endpoint.
+O endpoint WebSocket `/games/{id}/stream` envia snapshots confirmados. O cliente oferece os subprotocolos
+`checkers.v1` e `guest.TOKEN`; o servidor seleciona checkers.v1 e valida o token e o assento no handshake.
+Não há token em query string nem confiança em playerId fornecido pelo cliente. Use WSS na hospedagem.
+Não registre Sec-WebSocket-Protocol ou Authorization nos logs. Uma sessão inválida recebe 401;
+sem assento na sala, recebe 403. A validade é verificada ao abrir/reabrir a conexão.
 
 O controlador publica depois de o caso de uso retornar: a transação do banco já confirmou estado e histórico.
 Uma falha ou rollback não publica snapshot. Um recibo idempotente pode repetir uma versão, que o Angular ignora.

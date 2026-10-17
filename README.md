@@ -1,12 +1,14 @@
 # Checkers AWS
 
-MVP local de damas brasileiras com Java 25, Spring Boot, Angular 22, PostgreSQL e WebSocket.
+Demonstração de damas brasileiras com Java 25, Spring Boot, Angular 22, PostgreSQL e WebSocket.
+
+Demonstração publicada: https://damas.highonline.com.br/. Veja o [guia Hostinger](docs/hostinger.md) antes de atualizar o servidor. A versão hospedada pode diferir da main.
 
 ## Rodar com Docker
 
 ```bash
 cp .env.example .env
-# Edite .env e escolha a senha local.
+# Edite .env: senha do banco e chave de sessão (openssl rand -hex 32).
 bash scripts/dev.sh up
 ```
 
@@ -38,7 +40,7 @@ Veja [execução completa](docs/running.md), incluindo desenvolvimento sem conta
 
 ## Limites do MVP
 
-A identidade por convite/cabeçalho é de protótipo local, sem login seguro. Empates oficiais, relógio,
+Sessões de visitante assinadas autorizam os assentos; convites são de uso único. Não há contas nem recuperação de acesso. Empates oficiais, relógio,
 matchmaking, ranking, bot e histórico navegável ficam para evolução. O WebSocket atende uma instância;
 antes de escalar horizontalmente, implementar outbox e distribuição de eventos. O perfil padrão do backend
 usa memória; o Compose usa PostgreSQL. Não declarar aderência completa às regras oficiais.
@@ -48,6 +50,7 @@ restrição por IP, custos, plano e teardown. Não há apply nem deploy automát
 
 ## Documentação
 
+- [Implantar e operar no Hostinger](docs/hostinger.md)
 - [Rodar e testar](docs/running.md)
 - [API REST](docs/api.md) e [requests.http](backend/requests.http)
 - [PostgreSQL](docs/postgresql.md) e [tempo real](docs/realtime.md)

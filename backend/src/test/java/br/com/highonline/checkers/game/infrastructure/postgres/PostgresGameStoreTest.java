@@ -118,6 +118,56 @@ class PostgresGameStoreTest {
         return jdbc.queryForObject("SELECT count(*) FROM game_moves WHERE game_id = ?", Integer.class, id.value());
     }
 
+    @Test
+    void invitationOwnershipSurvivesRestartAndOnlyOneGuestCanClaim() throws Exception {
+        var tx = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
+        var access = new PostgresRoomAccess(store(), jdbc, tx);
+        var rooms = new RoomService(access);
+        UUID owner = UUID.randomUUID(), a = UUID.randomUUID(), b = UUID.randomUUID();
+        var created = rooms.create(owner);
+        CyclicBarrier start = new CyclicBarrier(2);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            var first = executor.submit(() -> claimAfter(start, rooms, created, a));
+            var second = executor.submit(() -> claimAfter(start, rooms, created, b));
+            var results = List.of(first.get(10, TimeUnit.SECONDS), second.get(10, TimeUnit.SECONDS));
+            assertEquals(1, results.stream().filter("OK"::equals).count());
+            assertEquals(1, results.stream().filter("INVITATION_UNAVAILABLE"::equals).count());
+        } finally { executor.shutdownNow(); }
+        var restarted = new RoomService(new PostgresRoomAccess(store(), new JdbcTemplate(dataSource), tx));
+        assertEquals(created.game().whitePlayerId(), restarted.seat(created.game().id(), owner));
+        assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM game_access WHERE game_id = ? AND side = 'BLACK' AND session_id IS NOT NULL",
+                Integer.class, created.game().id().value()));
+        assertNull(jdbc.queryForObject("SELECT invitation_hash FROM game_access WHERE game_id = ? AND side = 'BLACK'", String.class, created.game().id().value()));
+    }
+
+    private String claimAfter(CyclicBarrier start, RoomService rooms, RoomService.Created created, UUID guest) throws Exception {
+        start.await(5, TimeUnit.SECONDS);
+        try { rooms.join(created.game().id(), guest, created.invitation()); return "OK"; }
+        catch (GameFailure failure) { return failure.code().name(); }
+    }
+
+    @Test
+    void roomCreationRollsBackStateWhenAccessInsertFails() {
+        UUID owner = UUID.randomUUID();
+        int before = jdbc.queryForObject("SELECT count(*) FROM games", Integer.class);
+        jdbc.execute("""
+                CREATE FUNCTION reject_test_access() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN IF NEW.side = 'BLACK' THEN RAISE EXCEPTION 'injected access failure'; END IF; RETURN NEW; END; $$
+                """);
+        jdbc.execute("CREATE TRIGGER reject_test_access BEFORE INSERT ON game_access FOR EACH ROW EXECUTE FUNCTION reject_test_access()");
+        try {
+            var rooms = new RoomService(new PostgresRoomAccess(store(), jdbc,
+                    new TransactionTemplate(new DataSourceTransactionManager(dataSource))));
+            assertThrows(org.springframework.dao.DataAccessException.class, () -> rooms.create(owner));
+            assertEquals(before, jdbc.queryForObject("SELECT count(*) FROM games", Integer.class));
+            assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM game_access WHERE session_id = ?", Integer.class, owner));
+        } finally {
+            jdbc.execute("DROP TRIGGER reject_test_access ON game_access");
+            jdbc.execute("DROP FUNCTION reject_test_access()");
+        }
+    }
+
     private List<String> race(GameId id, PlayMove first, PlayMove second) throws Exception {
         CyclicBarrier barrier = new CyclicBarrier(2);
         // Separate adapters and connections, forced to read the same original snapshot before CAS.

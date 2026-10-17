@@ -8,8 +8,9 @@ npm start
 ```
 
 Abra http://localhost:4200, crie uma partida e abra o convite do adversário em outra aba ou navegador.
-O link da própria aba permanece na URL para recuperar a sessão ao recarregar. O convite contém a
-identidade do adversário: é um recurso do protótipo local, não autenticação nem autorização segura.
+A sessão de visitante fica no sessionStorage da aba e a URL própria contém apenas a partida.
+O convite de uso único é removido da URL após o aceite. Fechar a aba ou limpar esse armazenamento
+pode perder o acesso; não há conta nem recuperação. Links antigos com player= não autenticam ninguém.
 
 Selecione a peça, percorra os pousos destacados e confirme somente depois de completar o lance.
 O tabuleiro das pretas é girado. Damas têm uma coroa. O backend fornece os lances legais e decide o resultado.

@@ -11,13 +11,13 @@ export class LiveGame {
 
   constructor(private snapshot: (game: Game) => void, private reconcile: () => void,
               private status: (state: ConnectionStatus) => void,
-              private factory: (url: string) => WebSocket = url => new WebSocket(url)) {}
+              private factory: (url: string, protocols: string[]) => WebSocket = (url, protocols) => new WebSocket(url, protocols)) {}
 
-  start(gameId: string, playerId: string) {
-    const key = gameId + ':' + playerId;
+  start(gameId: string, token: string) {
+    const key = gameId + ':' + token;
     if (key === this.key) return;
     this.stop(); this.key = key;
-    this.connect(gameId, playerId, this.generation);
+    this.connect(gameId, token, this.generation);
   }
 
   stop() {
@@ -28,13 +28,13 @@ export class LiveGame {
     if (old) old.close();
   }
 
-  private connect(gameId: string, playerId: string, generation: number) {
+  private connect(gameId: string, token: string, generation: number) {
     if (generation !== this.generation) return;
     this.status(this.retries ? 'reconnecting' : 'connecting');
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     let socket: WebSocket;
-    try { socket = this.factory(`${protocol}//${location.host}/api/games/${gameId}/stream?playerId=${playerId}`); }
-    catch { this.retry(gameId, playerId, generation); return; }
+    try { socket = this.factory(`${protocol}//${location.host}/api/games/${gameId}/stream`, ['checkers.v1', `guest.${token}`]); }
+    catch { this.retry(gameId, token, generation); return; }
     this.socket = socket;
     socket.onopen = () => {
       if (generation !== this.generation) return;
@@ -48,12 +48,12 @@ export class LiveGame {
       } catch { this.reconcile(); }
     };
     socket.onerror = () => socket.close();
-    socket.onclose = () => { if (generation === this.generation) this.retry(gameId, playerId, generation); };
+    socket.onclose = () => { if (generation === this.generation) this.retry(gameId, token, generation); };
   }
 
-  private retry(gameId: string, playerId: string, generation: number) {
+  private retry(gameId: string, token: string, generation: number) {
     this.status('reconnecting');
     const delay = Math.min(15000, 1000 * 2 ** this.retries++);
-    this.timer = setTimeout(() => this.connect(gameId, playerId, generation), delay);
+    this.timer = setTimeout(() => this.connect(gameId, token, generation), delay);
   }
 }

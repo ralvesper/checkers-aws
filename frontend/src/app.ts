@@ -39,20 +39,31 @@ export class AppComponent {
   constructor() {
     inject(DestroyRef).onDestroy(() => this.live.stop());
     const fragment = new URLSearchParams(location.hash.slice(1));
-    const gameId = fragment.get('game'), actor = fragment.get('player');
-    if (gameId && actor && this.uuid(gameId) && this.uuid(actor)) {
-      this.player.set(actor);
-      void this.load(gameId);
-    } else if (gameId || actor) this.error.set('O link da partida está incompleto ou inválido.');
+    const gameId = fragment.get('game'), invitation = fragment.get('invite');
+    if (gameId && this.uuid(gameId)) {
+      if (invitation) void this.join(gameId, invitation);
+      else void this.load(gameId);
+    } else if (gameId || invitation) this.error.set('O link da partida está incompleto ou inválido.');
+  }
+
+  private async join(id: string, invitation: string) {
+    this.busy.set(true); this.error.set('');
+    try {
+      const game = await this.api.join(id, invitation);
+      this.player.set(game.blackPlayerId); this.game.set(game); this.clearSelection(); this.updateLink();
+      this.notice.set('Convite aceito. Você joga com as pretas.');
+    } catch (error) { this.showError(error); }
+    finally { this.finish(); }
   }
 
   async create() {
     if (this.busy() || this.pending()) return;
     this.busy.set(true); this.error.set('');
-    const white = crypto.randomUUID(), black = crypto.randomUUID();
     try {
-      const game = await this.api.create(black, white, white);
-      this.player.set(white); this.game.set(game); this.clearSelection();
+      const room = await this.api.create();
+      const game = room.game;
+      sessionStorage.setItem(`checkers.invitation:${game.id}`, room.invitation);
+      this.player.set(game.whitePlayerId); this.game.set(game); this.clearSelection();
       this.updateLink(); this.notice.set('Partida criada. Compartilhe o link das pretas para começar.');
     } catch (error) { this.showError(error); }
     finally { this.finish(); }
@@ -62,7 +73,8 @@ export class AppComponent {
     if (!id || this.busy()) return;
     this.busy.set(true); this.error.set('');
     try {
-      const game = await this.api.get(id, this.player());
+      const result = await this.api.get(id);
+      const game = result.game; this.player.set(result.player);
       if (!this.game() || mayApply(this.game(), game)) { this.game.set(game); this.clearSelection(); }
       this.updateLink();
     } catch (error) { this.showError(error); }
@@ -93,7 +105,7 @@ export class AppComponent {
     this.busy.set(true); this.error.set('');
     let reload = false;
     try {
-      const next = await this.api.play(game.id, this.player(), command);
+      const next = await this.api.play(game.id, command);
       if (mayApply(this.game(), next)) this.game.set(next);
       this.pending.set(null); this.clearSelection(); this.notice.set('Lance confirmado.');
     } catch (error) {
@@ -132,10 +144,10 @@ export class AppComponent {
   private updateLink() {
     const game = this.game(); if (!game) return;
     const base = location.origin + location.pathname;
-    history.replaceState(null, '', `#game=${game.id}&player=${this.player()}`);
-    const opponent = this.color() === 'WHITE' ? game.blackPlayerId : game.whitePlayerId;
-    this.invitation.set(`${base}#game=${game.id}&player=${opponent}`);
-    this.live.start(game.id, this.player());
+    history.replaceState(null, '', `#game=${game.id}`);
+    const invitation = sessionStorage.getItem(`checkers.invitation:${game.id}`);
+    this.invitation.set(invitation && this.color() === 'WHITE' ? `${base}#game=${game.id}&invite=${encodeURIComponent(invitation)}` : '');
+    this.live.start(game.id, this.api.token());
   }
   private uuid(value: string) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value); }
   private requestSync() {
@@ -153,7 +165,9 @@ export class AppComponent {
       WRONG_TURN: 'Agora é a vez do adversário.', INVALID_MOVE: 'Esse lance não é permitido pelas regras.',
       COMMAND_CONFLICT: 'Este comando já foi usado com outro lance. Atualize a partida.',
       NOT_FOUND: 'Partida não encontrada. O servidor em memória pode ter sido reiniciado.',
-      FORBIDDEN: 'Este link não pertence a um participante da partida.', FINISHED: 'A partida já terminou.',
+      UNAUTHORIZED: 'Sua sessão expirou ou é inválida. Para começar novamente, crie uma nova partida.',
+      INVITATION_UNAVAILABLE: 'Este convite expirou ou já foi aceito em outro navegador.',
+      FORBIDDEN: 'Esta sessão não tem acesso à partida. Use o convite ou a aba onde você começou.', FINISHED: 'A partida já terminou.',
       INVALID_REQUEST: 'O pedido está incompleto ou inválido.'
     };
     this.error.set(messages[code] ?? 'Não foi possível acessar o servidor. Confira a conexão e tente novamente.');

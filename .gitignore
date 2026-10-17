@@ -19,3 +19,6 @@ test-results/
 __pycache__/
 *.pyc
 
+
+backups/
+*.dump

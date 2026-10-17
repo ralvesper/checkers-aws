@@ -6,7 +6,7 @@ Requer Docker com Compose v2 e acesso às imagens base. Na raiz do repositório:
 
 ```bash
 cp .env.example .env
-# Edite .env e escolha a senha local.
+# Edite .env: senha do banco e CHECKERS_SESSION_SECRET (openssl rand -hex 32).
 bash scripts/dev.sh up
 ```
 
@@ -14,7 +14,7 @@ No PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
-# Edite .env e escolha a senha local.
+# Edite .env: senha do banco e CHECKERS_SESSION_SECRET (openssl rand -hex 32).
 ./scripts/dev.ps1 up
 ```
 
@@ -56,7 +56,7 @@ Dois participantes por convite, tabuleiro responsivo e orientado por jogador, co
 controle de turno, versão, reenvio idempotente, atualização automática e recuperação na reconexão.
 PostgreSQL mantém estado e lances em uma transação. Scripts e containers oferecem execução reproduzível.
 
-O link identifica um participante apenas no protótipo. Não há login seguro, regras oficiais de empate,
+A sessão de visitante assinada identifica o assento. Não há contas nem recuperação de acesso, regras oficiais de empate,
 relógio, matchmaking, ranking, bot ou histórico navegável. Não declarar aderência completa às regras oficiais.
 O hub de eventos atende uma instância; escala horizontal exige outbox e distribuição entre processos.
 
@@ -67,3 +67,5 @@ construção das imagens Docker e o mesmo teste de navegador através do Nginx/C
 Um smoke test adicional reinicia a API e confere por HTTP que estado e recibo de idempotência permanecem no banco.
 Também executa terraform fmt/validate/test sem criar recursos AWS.
 Terraform preparado não equivale a implantação validada: DNS, certificados, conta, custos e smoke test AWS dependem da etapa de implantação.
+
+Para o domínio publicado, veja [hostinger.md](hostinger.md). Preserve a chave de sessão entre reinícios; links antigos de UUID deixam de funcionar após a atualização de segurança.

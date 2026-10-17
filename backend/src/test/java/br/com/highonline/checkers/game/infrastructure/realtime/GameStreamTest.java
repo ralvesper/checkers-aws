@@ -1,6 +1,7 @@
 package br.com.highonline.checkers.game.infrastructure.realtime;
 
-import br.com.highonline.checkers.game.application.GameService;
+import br.com.highonline.checkers.game.application.*;
+import br.com.highonline.checkers.game.infrastructure.security.GuestTokens;
 import br.com.highonline.checkers.game.domain.Game;
 import br.com.highonline.checkers.player.domain.PlayerId;
 import com.jayway.jsonpath.JsonPath;
@@ -20,25 +21,29 @@ import static org.junit.jupiter.api.Assertions.*;
 class GameStreamTest {
     @LocalServerPort int port;
     @Autowired GameService service;
+    @Autowired RoomService rooms;
+    @Autowired GuestTokens tokens;
     @Autowired GameStreamHandler stream;
     private final HttpClient client = HttpClient.newHttpClient();
 
     @Test
     void sendsConfirmedSnapshotAndReconnectsWithLatestState() throws Exception {
-        PlayerId black = PlayerId.newId(), white = PlayerId.newId();
-        Game game = service.create(white, black, white);
+        String white = tokens.issue().token(), black = tokens.issue().token();
+        var room = rooms.create(tokens.verify(white));
+        Game game = room.game();
+        rooms.join(game.id(), tokens.verify(black), room.invitation());
         Messages messages = new Messages();
         WebSocket socket = connect(game, black, messages);
         assertEquals(0, version(messages.next()));
         try {
             String command = "{\"from\":{\"row\":5,\"column\":0},\"landings\":[{\"row\":4,\"column\":1}],\"expectedVersion\":0,\"clientMoveId\":\"" + UUID.randomUUID() + "\"}";
             var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/games/" + game.id().value() + "/moves"))
-                    .header("X-Player-Id", white.value().toString()).header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + white).header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(command)).build();
             assertEquals(200, client.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
             assertEquals(1, version(messages.next()));
             // Rejected stale command must not produce a phantom confirmed snapshot.
-            var invalid = HttpRequest.newBuilder(request.uri()).header("X-Player-Id", white.value().toString())
+            var invalid = HttpRequest.newBuilder(request.uri()).header("Authorization", "Bearer " + white)
                     .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(command.replaceFirst("clientMoveId", "unusedId"))).build();
             assertEquals(400, client.send(invalid, HttpResponse.BodyHandlers.ofString()).statusCode());
             assertNull(messages.queue.poll(200, TimeUnit.MILLISECONDS));
@@ -51,26 +56,27 @@ class GameStreamTest {
 
     @Test
     void refusesNonParticipantAndDoesNotLeakOtherGame() throws Exception {
-        PlayerId black = PlayerId.newId(), white = PlayerId.newId();
-        Game first = service.create(white, black, white);
-        var failure = assertThrows(ExecutionException.class, () -> connect(first, PlayerId.newId(), new Messages()));
+        String white = tokens.issue().token();
+        Game first = rooms.create(tokens.verify(white)).game();
+        PlayerId whiteSeat = first.whitePlayerId(), blackSeat = first.blackPlayerId();
+        var failure = assertThrows(ExecutionException.class, () -> connect(first, tokens.issue().token(), new Messages()));
         assertInstanceOf(WebSocketHandshakeException.class, failure.getCause());
         assertEquals(403, ((WebSocketHandshakeException) failure.getCause()).getResponse().statusCode());
         Messages messages = new Messages();
         WebSocket socket = connect(first, white, messages);
         try {
             assertEquals(0, version(messages.next()));
-            Game other = service.create(white, black, white);
+            Game other = service.create(whiteSeat, blackSeat, whiteSeat);
             Game confirmed = service.play(other.id(), new br.com.highonline.checkers.game.application.PlayMove(
-                    white, other.legalMoves().get(0), 0, UUID.randomUUID()));
+                    whiteSeat, other.legalMoves().get(0), 0, UUID.randomUUID()));
             stream.publish(confirmed);
             assertNull(messages.queue.poll(200, TimeUnit.MILLISECONDS));
         } finally { socket.abort(); }
     }
 
-    private WebSocket connect(Game game, PlayerId actor, Messages listener) throws Exception {
-        return client.newWebSocketBuilder().buildAsync(URI.create("ws://localhost:" + port + "/games/"
-                + game.id().value() + "/stream?playerId=" + actor.value()), listener).get(5, TimeUnit.SECONDS);
+    private WebSocket connect(Game game, String token, Messages listener) throws Exception {
+        return client.newWebSocketBuilder().subprotocols("checkers.v1", "guest." + token).buildAsync(URI.create("ws://localhost:" + port + "/games/"
+                + game.id().value() + "/stream"), listener).get(5, TimeUnit.SECONDS);
     }
     private int version(String json) { return JsonPath.read(json, "$.version"); }
     private static class Messages implements WebSocket.Listener {

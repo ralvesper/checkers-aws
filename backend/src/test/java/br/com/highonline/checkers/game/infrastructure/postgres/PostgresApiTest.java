@@ -24,12 +24,14 @@ class PostgresApiTest {
 
     @Test
     void profileWiresApiToPersistentAdapter() throws Exception {
-        UUID black = UUID.randomUUID(), white = UUID.randomUUID();
+        var client = HttpClient.newHttpClient();
+        var sessionRequest = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/sessions"))
+                .POST(HttpRequest.BodyPublishers.ofString("{}")).header("Content-Type", "application/json").build();
+        String token = com.jayway.jsonpath.JsonPath.read(client.send(sessionRequest, HttpResponse.BodyHandlers.ofString()).body(), "$.token");
         var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/games"))
-                .header("Content-Type", "application/json").header("X-Player-Id", white.toString())
-                .POST(HttpRequest.BodyPublishers.ofString("{\"blackPlayerId\":\"" + black
-                        + "\",\"whitePlayerId\":\"" + white + "\"}")).build();
-        var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+                .header("Authorization", "Bearer " + token).header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{}")).build();
+        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(201, response.statusCode(), response.body());
         String location = response.headers().firstValue("Location").orElseThrow();
         UUID id = UUID.fromString(location.substring(location.lastIndexOf('/') + 1));

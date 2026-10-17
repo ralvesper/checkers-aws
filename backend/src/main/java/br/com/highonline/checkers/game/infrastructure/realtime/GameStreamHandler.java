@@ -15,7 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Best-effort confirmed snapshots for one application instance. REST remains authoritative. */
 @Component
 @Profile({"local", "local-postgres"})
-public class GameStreamHandler extends TextWebSocketHandler {
+public class GameStreamHandler extends TextWebSocketHandler implements SubProtocolCapable {
+    @Override public java.util.List<String> getSubProtocols() { return java.util.List.of("checkers.v1"); }
     private final GameService service;
     private final JsonMapper mapper = JsonMapper.builder().build();
     private final ConcurrentHashMap<String, Client> clients = new ConcurrentHashMap<>();

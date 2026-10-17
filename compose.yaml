@@ -21,7 +21,8 @@ services:
       CHECKERS_DATABASE_URL: jdbc:postgresql://postgres:5432/checkers
       CHECKERS_DATABASE_USER: checkers
       CHECKERS_DATABASE_PASSWORD: ${CHECKERS_DATABASE_PASSWORD:?Set CHECKERS_DATABASE_PASSWORD for the local database}
-      CHECKERS_WEBSOCKET_ALLOWED_ORIGINS: http://localhost:8081,http://127.0.0.1:8081
+      CHECKERS_WEBSOCKET_ALLOWED_ORIGINS: ${CHECKERS_WEBSOCKET_ALLOWED_ORIGINS:-http://localhost:8081,http://127.0.0.1:8081}
+      CHECKERS_SESSION_SECRET: ${CHECKERS_SESSION_SECRET:?Set a stable random session signing secret}
     depends_on:
       postgres:
         condition: service_healthy

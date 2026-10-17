@@ -12,3 +12,5 @@ A implementação avançará em etapas. Diagramas de componentes futuros são pr
 - [Executar o MVP](running.md)
 - [API REST](api.md), [PostgreSQL](postgresql.md), [WebSocket](realtime.md)
 - [Roadmap e limites](roadmap.md)
+
+- [Hostinger: operação, atualização, backup e rollback](hostinger.md)
