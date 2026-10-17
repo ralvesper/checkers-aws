@@ -1,6 +1,6 @@
 # Arquitetura da aplicação
 
-> **Estado atual:** o backend contém o domínio com lances completos, controle de turno, versão e vitória. Os casos de uso, API de partidas, Angular, persistência e infraestrutura AWS abaixo são uma proposta para as próximas etapas. O [desenho global](aws-deployment-global.md) é um estudo de escala posterior.
+> **Estado atual:** o backend contém o domínio jogável, casos de uso e API REST local com controle de versão e idempotência em memória. Angular, autenticação real, persistência durável, WebSocket e infraestrutura AWS abaixo são propostas para as próximas etapas. Consulte o [contrato local](../api.md). O [desenho global](aws-deployment-global.md) é um estudo de escala posterior.
 
 ## Componentes da aplicação
 

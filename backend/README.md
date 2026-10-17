@@ -34,5 +34,11 @@ Game updated = game.play(whitePlayerId, move, game.version());
 
 `Move` contém origem e pousos ordenados de um turno completo. `legalMoves()` retorna apenas sequências completas que atendem à lei da maioria. As capturadas bloqueiam diagonais até o fim do lance. `play` valida jogador e versão, incrementa a versão uma vez e retorna status e vencedor. Um erro não altera o snapshot original.
 
-`StaleGameVersionException` distingue versão desatualizada; erros de jogador ou lance usam `IllegalArgumentException`. A verificação em memória não substitui o controle otimista no banco, previsto na issue #4. Idempotência por `clientMoveId` pertence à futura camada de aplicação/persistência.
+`StaleGameVersionException` distingue versão desatualizada; erros de jogador ou lance usam `IllegalArgumentException`. A verificação em memória não substitui o controle otimista no banco, previsto na issue #4.
+
+## Casos de uso e transporte
+
+`game/application` contém `GameService`, o comando `PlayMove` e a porta `GameStore`, sem dependências Spring. A porta exige atualização atômica de estado e recibos de idempotência. `game/infrastructure/memory` implementa esse contrato com `ConcurrentHashMap.compute`, serializando atualizações da mesma partida. `game/infrastructure/http` adapta JSON e códigos HTTP aos casos de uso.
+
+O perfil padrão `local` disponibiliza a API com armazenamento volátil e identidade de protótipo via cabeçalho. Veja o [contrato REST](../docs/api.md) e [requests.http](requests.http). Autenticação e persistência durável continuam pendentes.
 
