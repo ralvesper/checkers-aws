@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 /** Local prototype identity only. Replace header identity with authenticated principal before hosting. */
 @RestController
 @RequestMapping("/games")
-@Profile("local")
+@Profile({"local", "local-postgres"})
 public class GameController {
     private final GameService service;
     public GameController(GameService service) { this.service = service; }

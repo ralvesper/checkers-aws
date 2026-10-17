@@ -1,8 +1,9 @@
 # API REST local
 
 Execute `mvn spring-boot:run` em `backend/` com Java 25. O perfil padrão é `local`.
-O adaptador em memória e os endpoints desta etapa existem somente nesse perfil.
-O estado e os recibos de idempotência são perdidos ao reiniciar e não são compartilhados entre processos.
+Nesse perfil, o adaptador usa memória: estado e recibos são perdidos ao reiniciar e não são compartilhados entre processos.
+O perfil alternativo [local-postgres](postgresql.md) mantém o mesmo contrato com estado e recibos duráveis no PostgreSQL.
+Os endpoints existem somente nesses dois perfis de desenvolvimento.
 
 ## Identidade no protótipo
 
@@ -67,7 +68,7 @@ Erros retornam `application/problem+json`, com `status`, `title`, `detail` e `co
 | 409 | FINISHED | Novo comando em partida encerrada |
 | 422 | INVALID_MOVE | Caminho bem formado que viola as regras do jogo |
 
-O PostgreSQL e suas transações serão adicionados na issue #4. Esta implementação não oferece durabilidade,
-histórico consultável, WebSocket, autenticação real, empates ou relógio.
+O perfil `local-postgres` grava estado, lances e recibos na mesma transação com controle otimista no banco.
+Ainda não há endpoint de histórico, WebSocket, autenticação real, empates ou relógio.
 
 Exemplos executáveis: [backend/requests.http](../backend/requests.http).

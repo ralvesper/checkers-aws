@@ -40,6 +40,22 @@ public final class Game {
 
     public GameId id() { return id; }
 
+    /** Persistence boundary: restores a validated snapshot without replaying commands. */
+    public static Game restore(GameId id, PlayerId black, PlayerId white, Board board,
+                               Color turn, long version, GameStatus status, Color winner) {
+        if (id == null || black == null || white == null || black.equals(white) || board == null
+                || turn == null || version < 0 || status == null
+                || (status == GameStatus.IN_PROGRESS && winner != null)
+                || (status == GameStatus.FINISHED && (winner == null || winner != turn.opposite()))) {
+            throw new IllegalArgumentException("Invalid game snapshot");
+        }
+        boolean noMoves = MoveRules.legalMoves(board, turn).isEmpty();
+        if ((status == GameStatus.FINISHED) != noMoves) {
+            throw new IllegalArgumentException("Status does not match available moves");
+        }
+        return new Game(id, black, white, board, turn, version, status, winner);
+    }
+
     public List<Move> legalMoves() {
         return status == GameStatus.FINISHED ? List.of() : MoveRules.legalMoves(board, turn);
     }

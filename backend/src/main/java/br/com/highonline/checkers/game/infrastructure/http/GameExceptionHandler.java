@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice(assignableTypes = GameController.class)
-@Profile("local")
+@Profile({"local", "local-postgres"})
 public class GameExceptionHandler {
     @ExceptionHandler(GameFailure.class)
     public ResponseEntity<ProblemDetail> gameFailure(GameFailure failure) {
