@@ -1,26 +1,20 @@
 # Backend — modelo de domínio
 
-Pacotes agrupados por funcionalidade; cada contexto terá suas próprias camadas quando forem necessárias:
+Pacotes agrupados por funcionalidade, com domínio independente do transporte e do banco.
 
-```text
-br.com.highonline.checkers
-├── game
-│   └── domain
-│       ├── Game.java       # entidade e raiz do agregado Partida
-│       ├── GameId.java     # value object
-│       ├── Board.java      # value object imutável
-│       ├── Square.java     # value object
-│       ├── Piece.java      # value object
-│       └── Color.java      # enum do domínio
-└── player
-    └── domain
-        ├── Player.java     # entidade e raiz do agregado Jogador
-        └── PlayerId.java   # value object
-```
+| Pacote | Responsabilidade |
+|---|---|
+| game/domain | Agregado Game, tabuleiro, lances, regras e estado terminal |
+| game/application | Casos de uso, comando PlayMove e porta transacional GameStore |
+| game/infrastructure/http | Contrato REST e erros HTTP |
+| game/infrastructure/memory | Adaptador local em memória |
+| game/infrastructure/postgres | JDBC, codec de snapshot e transações |
+| game/infrastructure/realtime | WebSocket de snapshots confirmados |
+| player/domain | Agregado Player e identidade PlayerId |
 
 `Game` referencia jogadores por `PlayerId`, sem carregar o agregado `Player`. Duas pessoas distintas são necessárias para iniciar uma partida; **as brancas começam**, com 12 peças para cada lado. `Board` não expõe coleção mutável.
 
-A variante escolhida é [damas brasileiras de 64 casas](../docs/rules/README.md). O domínio aceita lances completos, captura obrigatória, lei da maioria, capturas em cadeia, movimento de damas e coroação ao final do lance. Detecta vitória por ausência de peças ou movimentos do adversário. Empates e relógio ainda não estão implementados. Os pacotes `application` e `infrastructure` serão adicionados quando houver casos de uso e persistência.
+A variante escolhida é [damas brasileiras de 64 casas](../docs/rules/README.md). O domínio aceita lances completos, captura obrigatória, lei da maioria, capturas em cadeia, movimento de damas e coroação ao final do lance. Detecta vitória por ausência de peças ou movimentos do adversário. Empates e relógio ainda não estão implementados.
 
 ## Aplicar um lance
 

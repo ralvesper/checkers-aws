@@ -12,10 +12,11 @@
 - Pedra vira dama ao **terminar** o lance na linha de coroação. Se passar por ela durante uma captura e continuar o lance, permanece pedra.
 - Vitória por capturar todas as peças ou deixar o adversário sem jogadas. Há regras oficiais adicionais de empate por repetição, contagem de lances e certos finais.
 
-## Decisão de modelagem proposta
+## Decisão de modelagem adotada
 
 Um **lance completo**, inclusive todos os saltos de uma captura múltipla, será um único comando ao agregado `Game`: jogador, casa inicial e lista ordenada das casas de pouso. O agregado valida a sequência, atualiza o tabuleiro, muda a vez e incrementa `version` uma vez. Isso permite verificar a lei da maioria sobre o lance inteiro e evita publicar ao adversário um estado intermediário.
 
-A decisão de enviar a sequência inteira em um comando precisa ser validada para a experiência desejada no Angular. Os casos de empate oficiais serão implementados em etapas; não declarar uma partida totalmente aderente às regras oficiais antes disso.
+A interface Angular compõe e destaca os pousos, permitindo confirmar somente a sequência completa. O fluxo é exercitado por testes de composição e navegador. Os casos de empate oficiais serão implementados em etapas; não declarar uma partida totalmente aderente às regras oficiais antes disso.
 
 Veja os [cenários para testes](acceptance-cases.md).
+

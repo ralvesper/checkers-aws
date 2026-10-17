@@ -35,7 +35,7 @@ flowchart TB
 
 Os pacotes são organizados **por funcionalidade**: `game/domain`, `game/application` e `game/infrastructure`. `Player` forma outro agregado, referenciado por `PlayerId`. A versão detecta comandos enviados sobre um estado antigo; `clientMoveId` torna o reenvio idempotente. Veja o [modelo de domínio](domain-model.md).
 
-## Sequência de uma jogada
+## Sequência alvo de uma jogada (com outbox futura)
 
 ### Autor da jogada recebe a confirmação
 
