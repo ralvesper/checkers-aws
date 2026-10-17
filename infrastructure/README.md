@@ -59,13 +59,13 @@ HTTPS e conexão WSS. Esses testes em AWS ainda não foram executados.
 
 ## Limites e operação
 
-O laboratório usa a identidade de protótipo; WAF por IP não substitui autenticação. Não é uma implantação pública de produção.
+O laboratório usa sessões de visitante assinadas; WAF por IP não substitui autorização, contas ou quotas. Não é uma implantação pública de produção.
 ECS mantém **uma tarefa** e substitui a antiga antes da nova, com uma interrupção durante deploy, para não dividir o hub WebSocket.
 Antes de habilitar múltiplas tarefas, implementar outbox + distribuição de eventos. A reconexão recupera o estado pelo PostgreSQL.
 O RDS padrão é Single-AZ para laboratório; `db_multi_az=true` habilita Multi-AZ. NAT único também é uma escolha de laboratório.
 O cliente JDBC desta etapa ainda não tem pool. Não há autoscaling nem arquitetura global implementada.
 
-A senha do banco é gerenciada pelo RDS e entregue à tarefa via Secrets Manager; não fica nos tfvars.
+A senha do banco é gerenciada pelo RDS; a chave de sessão é gerada no módulo. Ambas são entregues via Secrets Manager e não ficam nos tfvars.
 O estado Terraform contém dados sensíveis, inclusive o token da origem: use backend privado e protegido antes de uso compartilhado.
 Não envie `.tfstate`, planos, `.tfvars`, credenciais ou `.terraform/` ao GitHub. O lockfile de providers deve ser versionado.
 

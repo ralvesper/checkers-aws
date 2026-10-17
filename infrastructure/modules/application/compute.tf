@@ -88,7 +88,7 @@ resource "aws_iam_role_policy_attachment" "execution" {
 data "aws_iam_policy_document" "database_secret" {
   statement {
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_db_instance.main.master_user_secret[0].secret_arn]
+    resources = [aws_db_instance.main.master_user_secret[0].secret_arn, aws_secretsmanager_secret.session.arn]
   }
 }
 resource "aws_iam_role_policy" "database_secret" {
@@ -118,7 +118,10 @@ resource "aws_ecs_task_definition" "app" {
       { name = "CHECKERS_DATABASE_USER", value = "checkers" },
       { name = "CHECKERS_WEBSOCKET_ALLOWED_ORIGINS", value = "https://${aws_cloudfront_distribution.web.domain_name}" }
     ]
-    secrets = [{ name = "CHECKERS_DATABASE_PASSWORD", valueFrom = "${aws_db_instance.main.master_user_secret[0].secret_arn}:password::" }]
+    secrets = [
+      { name = "CHECKERS_DATABASE_PASSWORD", valueFrom = "${aws_db_instance.main.master_user_secret[0].secret_arn}:password::" },
+      { name = "CHECKERS_SESSION_SECRET", valueFrom = aws_secretsmanager_secret.session.arn }
+    ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -152,5 +155,17 @@ resource "aws_ecs_service" "app" {
     container_name   = "backend"
     container_port   = 8080
   }
-  depends_on = [aws_lb_listener_rule.cloudfront, aws_iam_role_policy.database_secret, aws_iam_role_policy_attachment.execution]
+  depends_on = [aws_secretsmanager_secret_version.session, aws_lb_listener_rule.cloudfront, aws_iam_role_policy.database_secret, aws_iam_role_policy_attachment.execution]
+}
+
+resource "random_password" "session" {
+  length  = 64
+  special = false
+}
+resource "aws_secretsmanager_secret" "session" {
+  name_prefix = "${var.name}-session-"
+}
+resource "aws_secretsmanager_secret_version" "session" {
+  secret_id     = aws_secretsmanager_secret.session.id
+  secret_string = random_password.session.result
 }

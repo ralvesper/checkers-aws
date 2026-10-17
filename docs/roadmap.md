@@ -15,7 +15,7 @@ de confirmar. A regra de empate e o relógio ficaram fora do recorte inicial, co
 
 ## Evolução além do MVP
 
-- Autenticação real e convites seguros antes de abrir acesso público.
+- Sessões de visitante assinadas e convites de uso único implementados. Contas e recuperação de acesso permanecem evolução.
 - Regras oficiais de empate, desistência e relógio.
 - Cadastro, matchmaking, ranking e histórico navegável, conforme necessidade.
 - Pool de conexões, paginação e consulta de recibo específico.
@@ -24,3 +24,5 @@ de confirmar. A regra de empate e o relógio ficaram fora do recorte inicial, co
 - Multi-AZ, autoscaling e recuperação global conforme objetivos reais de disponibilidade.
 
 Consulte [running.md](running.md) para executar e [infraestrutura](../infrastructure/README.md) para os limites da preparação AWS.
+
+A demonstração está publicada em https://damas.highonline.com.br/. A configuração Hostinger de referência e as notas de atualização estão em [hostinger.md](hostinger.md); esta alteração não atualiza o VPS.

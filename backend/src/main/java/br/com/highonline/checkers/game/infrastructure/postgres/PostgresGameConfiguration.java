@@ -34,4 +34,9 @@ public class PostgresGameConfiguration {
     }
 
     @Bean GameService gameService(GameStore store) { return new GameService(store); }
+    @Bean RoomAccessStore roomAccessStore(GameStore store, DataSource dataSource) {
+        return new PostgresRoomAccess(store, new JdbcTemplate(dataSource),
+                new TransactionTemplate(new DataSourceTransactionManager(dataSource)));
+    }
+    @Bean RoomService roomService(RoomAccessStore access) { return new RoomService(access); }
 }

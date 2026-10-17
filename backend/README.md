@@ -34,5 +34,5 @@ Game updated = game.play(whitePlayerId, move, game.version());
 
 `game/application` contém `GameService`, o comando `PlayMove` e a porta `GameStore`, sem dependências Spring. A porta exige atualização atômica de estado e recibos de idempotência. `game/infrastructure/memory` implementa esse contrato com `ConcurrentHashMap.compute`, serializando atualizações da mesma partida. `game/infrastructure/http` adapta JSON e códigos HTTP aos casos de uso.
 
-O perfil padrão `local` disponibiliza a API com armazenamento volátil e identidade de protótipo via cabeçalho. O perfil alternativo `local-postgres` usa `game/infrastructure/postgres`, com JDBC, migrações Flyway e gravação transacional de estado e recibos. Veja o [contrato REST](../docs/api.md), [requests.http](requests.http) e as [instruções PostgreSQL](../docs/postgresql.md). Autenticação real continua pendente.
+O perfil padrão `local` disponibiliza a API com armazenamento volátil e sessões de visitante assinadas. O perfil alternativo `local-postgres` usa `game/infrastructure/postgres`, com JDBC, migrações Flyway e gravação transacional de estado e recibos. Veja o [contrato REST](../docs/api.md), [requests.http](requests.http) e as [instruções PostgreSQL](../docs/postgresql.md). Os assentos são vinculados a sessões privadas e os convites são de uso único. Contas e recuperação de acesso continuam fora do MVP.
 

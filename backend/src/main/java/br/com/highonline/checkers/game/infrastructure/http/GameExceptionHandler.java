@@ -1,6 +1,7 @@
 package br.com.highonline.checkers.game.infrastructure.http;
 
 import br.com.highonline.checkers.game.application.GameFailure;
+import br.com.highonline.checkers.game.infrastructure.security.Unauthorized;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -8,9 +9,14 @@ import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-@RestControllerAdvice(assignableTypes = GameController.class)
+@RestControllerAdvice(assignableTypes = {GameController.class, SessionController.class})
 @Profile({"local", "local-postgres"})
 public class GameExceptionHandler {
+    @ExceptionHandler(Unauthorized.class)
+    public ResponseEntity<ProblemDetail> unauthorized(Unauthorized failure) {
+        var response = problem(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", failure.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).header("WWW-Authenticate", "Bearer").body(response.getBody());
+    }
     @ExceptionHandler(GameFailure.class)
     public ResponseEntity<ProblemDetail> gameFailure(GameFailure failure) {
         HttpStatus status = switch (failure.code()) {
@@ -25,7 +31,7 @@ public class GameExceptionHandler {
     @ExceptionHandler({IllegalArgumentException.class, HttpMessageNotReadableException.class,
             ServletRequestBindingException.class, MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ProblemDetail> badRequest(Exception failure) {
-        return problem(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request body, path or X-Player-Id header");
+        return problem(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request body or path");
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String code, String detail) {

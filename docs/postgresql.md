@@ -2,7 +2,7 @@
 
 O perfil `local-postgres` usa JDBC e Flyway para persistir partidas, lances aceitos e recibos de idempotência.
 O perfil padrão `local` continua usando memória, sem exigir banco ou Docker.
-Os dois perfis são de desenvolvimento: `X-Player-Id` ainda não autentica o jogador.
+Os dois perfis usam sessões de visitante assinadas. No perfil persistente, CHECKERS_SESSION_SECRET é obrigatório e deve ser estável entre reinícios.
 
 ## Iniciar no WSL / Linux
 
@@ -10,6 +10,7 @@ Na raiz do projeto, escolha uma senha local (não a envie ao GitHub):
 
 ```bash
 export CHECKERS_DATABASE_PASSWORD='escolha-uma-senha-local'
+export CHECKERS_SESSION_SECRET="$(openssl rand -hex 32)" # Gere uma vez e preserve a chave.
 docker compose up -d --wait postgres
 cd backend
 mvn spring-boot:run -Dspring-boot.run.profiles=local-postgres
@@ -19,6 +20,9 @@ PowerShell, na raiz:
 
 ```powershell
 $env:CHECKERS_DATABASE_PASSWORD = 'escolha-uma-senha-local'
+$bytes = [byte[]]::new(32)
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+$env:CHECKERS_SESSION_SECRET = [Convert]::ToBase64String($bytes) # Gere uma vez e preserve.
 docker compose up -d --wait postgres
 Set-Location backend
 mvn spring-boot:run '-Dspring-boot.run.profiles=local-postgres'
@@ -81,5 +85,7 @@ codec JSON e API em memória continuam executando. O CI sempre informa essa vari
 Na raiz, `docker compose down` remove os containers e mantém o volume e os dados.
 `docker compose down -v` também apaga o banco local permanentemente.
 
-O uso de RDS, secrets gerenciados, autenticação real, backups, pool de conexões e produção
+O uso de RDS, secrets gerenciados, contas, backups, pool de conexões e produção
 será tratado antes de hospedar. Nenhum recurso AWS é provisionado por esta etapa.
+
+A migração V2 adiciona game_access. Partidas antigas são preservadas sem vínculo de sessão e os links antigos não autorizam acesso. Veja [hostinger.md](hostinger.md) antes de implantar.

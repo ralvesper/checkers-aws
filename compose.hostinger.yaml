@@ -1,0 +1,10 @@
+# Reference override for a VPS running Docker Compose behind a TLS reverse proxy.
+services:
+  postgres:
+    restart: unless-stopped
+  backend:
+    restart: unless-stopped
+    environment:
+      CHECKERS_WEBSOCKET_ALLOWED_ORIGINS: ${CHECKERS_WEBSOCKET_ALLOWED_ORIGINS:-https://damas.highonline.com.br}
+  frontend:
+    restart: unless-stopped
