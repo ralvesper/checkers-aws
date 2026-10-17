@@ -1,7 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { GameApi } from './game-api';
 import { Color, Command, Game, Piece, Position, complete, destinations, mayApply, same } from './game';
+import { ConnectionStatus, LiveGame } from './live-game';
 
 @Component({ selector: 'app-root', standalone: true, templateUrl: './app.html' })
 export class AppComponent {
@@ -16,6 +17,14 @@ export class AppComponent {
   path = signal<Position[]>([]);
   pending = signal<Command | null>(null);
   invitation = signal('');
+  connection = signal<ConnectionStatus>('offline');
+  private needsSync = false;
+  private live = new LiveGame(game => {
+    const current = this.game();
+    if (!current || !mayApply(current, game)) return;
+    if (game.version > current.version + 1) { this.requestSync(); return; }
+    this.game.set(game); this.clearSelection();
+  }, () => this.requestSync(), state => this.connection.set(state));
   color = computed<Color>(() => this.game()?.blackPlayerId === this.player() ? 'BLACK' : 'WHITE');
   myTurn = computed(() => this.game()?.currentPlayerId === this.player());
   canConfirm = computed(() => complete(this.game()?.legalMoves ?? [], this.origin(), this.path()));
@@ -28,6 +37,7 @@ export class AppComponent {
   });
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.live.stop());
     const fragment = new URLSearchParams(location.hash.slice(1));
     const gameId = fragment.get('game'), actor = fragment.get('player');
     if (gameId && actor && this.uuid(gameId) && this.uuid(actor)) {
@@ -45,7 +55,7 @@ export class AppComponent {
       this.player.set(white); this.game.set(game); this.clearSelection();
       this.updateLink(); this.notice.set('Partida criada. Compartilhe o link das pretas para começar.');
     } catch (error) { this.showError(error); }
-    finally { this.busy.set(false); }
+    finally { this.finish(); }
   }
 
   async load(id = this.game()?.id) {
@@ -56,7 +66,7 @@ export class AppComponent {
       if (!this.game() || mayApply(this.game(), game)) { this.game.set(game); this.clearSelection(); }
       this.updateLink();
     } catch (error) { this.showError(error); }
-    finally { this.busy.set(false); }
+    finally { this.finish(); }
   }
 
   choose(square: Position) {
@@ -91,7 +101,7 @@ export class AppComponent {
       if (error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500) {
         this.pending.set(null); this.clearSelection(); reload = true;
       } else this.notice.set('O resultado é incerto. Tente novamente para confirmar o mesmo lance.');
-    } finally { this.busy.set(false); }
+    } finally { this.finish(); }
     if (reload) { const message = this.error(); await this.load(); this.error.set(message); }
   }
 
@@ -125,8 +135,17 @@ export class AppComponent {
     history.replaceState(null, '', `#game=${game.id}&player=${this.player()}`);
     const opponent = this.color() === 'WHITE' ? game.blackPlayerId : game.whitePlayerId;
     this.invitation.set(`${base}#game=${game.id}&player=${opponent}`);
+    this.live.start(game.id, this.player());
   }
   private uuid(value: string) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value); }
+  private requestSync() {
+    this.needsSync = true;
+    if (!this.busy()) { this.needsSync = false; void this.load(); }
+  }
+  private finish() {
+    this.busy.set(false);
+    if (this.needsSync) { this.needsSync = false; void this.load(); }
+  }
   private showError(error: unknown) {
     const code = error instanceof HttpErrorResponse ? error.error?.code : '';
     const messages: Record<string, string> = {

@@ -69,6 +69,7 @@ Erros retornam `application/problem+json`, com `status`, `title`, `detail` e `co
 | 422 | INVALID_MOVE | Caminho bem formado que viola as regras do jogo |
 
 O perfil `local-postgres` grava estado, lances e recibos na mesma transação com controle otimista no banco.
-Ainda não há endpoint de histórico, WebSocket, autenticação real, empates ou relógio.
+O [WebSocket](realtime.md) entrega snapshots confirmados entre os participantes em uma instância da API.
+Ainda não há endpoint de histórico, autenticação real, empates ou relógio.
 
 Exemplos executáveis: [backend/requests.http](../backend/requests.http).
