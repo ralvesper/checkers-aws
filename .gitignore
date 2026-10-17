@@ -9,3 +9,9 @@ target/
 *.tfvars
 *.tfvars.json
 crash.log
+node_modules/
+dist/
+.angular/
+playwright-report/
+test-results/
+
