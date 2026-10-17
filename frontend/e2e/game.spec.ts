@@ -1,0 +1,26 @@
+import { test, expect } from '@playwright/test';
+test('duas abas criam, compartilham e jogam uma partida real', async ({page, context}) => {
+  await page.goto('/');
+  await page.getByRole('button', {name: /Criar partida/}).click();
+  await expect(page.getByRole('heading', {name: 'Sua vez.'})).toBeVisible();
+  const invitation = await page.getByRole('textbox', {name: 'Link do adversário'}).inputValue();
+  const opponent = await context.newPage();
+  await opponent.goto(invitation);
+  await expect(opponent.getByRole('heading', {name: 'Vez do adversário.'})).toBeVisible();
+  await page.locator('[data-row="5"][data-column="0"]').click();
+  await page.locator('[data-row="4"][data-column="1"]').click();
+  await page.getByRole('button', {name: /Confirmar lance/}).click();
+  await expect(page.getByText('VERSÃO 1', {exact: true})).toBeVisible();
+  await opponent.getByRole('button', {name: 'Atualizar', exact: true}).click();
+  await expect(opponent.getByRole('heading', {name: 'Sua vez.'})).toBeVisible();
+  await opponent.locator('[data-row="2"][data-column="1"]').click();
+  await opponent.locator('[data-row="3"][data-column="0"]').click();
+  await opponent.getByRole('button', {name: /Confirmar lance/}).click();
+  await expect(opponent.getByText('VERSÃO 2', {exact: true})).toBeVisible();
+  await page.getByRole('button', {name: 'Atualizar', exact: true}).click();
+  await expect(page.getByText('VERSÃO 2', {exact: true})).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('VERSÃO 2', {exact: true})).toBeVisible();
+  await page.setViewportSize({width: 390, height: 844});
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

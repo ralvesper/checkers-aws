@@ -1,0 +1,47 @@
+<div class="shell">
+  <header><a class="brand" href="/" aria-label="Damas início"><span class="brand-mark">◈</span> HIGH ONLINE <span class="brand-divider">/</span> DAMAS</a><span class="pill">BRASILEIRAS · 64 CASAS</span></header>
+  <main>
+    <section class="intro"><div class="eyebrow">UM TABULEIRO. INFINITAS POSSIBILIDADES.</div><h1>Sua próxima<br>grande jogada.</h1><p>Estratégia, atenção e um bom adversário.<br>Damas brasileiras, de onde você estiver.</p></section>
+    <div class="play-layout">
+      <section class="board-panel" aria-label="Área da partida">
+        <div class="player-strip"><div class="avatar dark-avatar">{{ color() === 'WHITE' ? 'P' : 'B' }}</div><div><strong>Adversário</strong><span>{{ color() === 'WHITE' ? 'Peças pretas' : 'Peças brancas' }}</span></div><span class="piece-count">{{ count(color() === 'WHITE' ? 'BLACK' : 'WHITE') }} peças</span></div>
+        <div class="board-frame"><div class="board" role="group" aria-label="Tabuleiro de damas">
+          @for (square of squares(); track square.row * 8 + square.column) {
+            <button class="square" [class.dark]="dark(square)" [class.selected]="selected(square)" [class.available]="available(square)"
+              [attr.data-row]="square.row" [attr.data-column]="square.column" [attr.aria-label]="label(square)"
+              [attr.aria-pressed]="selected(square)" [disabled]="!game() || !dark(square) || !myTurn() || busy() || !!pending()" (click)="choose(square)">
+              @if (piece(square); as piece) { <span class="piece" [class.white-piece]="piece.color === 'WHITE'" [class.black-piece]="piece.color === 'BLACK'">@if (piece.king) { <span class="crown">♛</span> }</span> }
+              @if (available(square) && !piece(square)) { <span class="destination"></span> }
+              <span class="coordinate">{{ String.fromCharCode(97 + square.column) }}{{ 8 - square.row }}</span>
+            </button>
+          }
+        </div></div>
+        <div class="player-strip bottom"><div class="avatar light-avatar">{{ color() === 'WHITE' ? 'B' : 'P' }}</div><div><strong>Você <span class="you-label">{{ color() === 'WHITE' ? 'BRANCAS' : 'PRETAS' }}</span></strong><span>{{ myTurn() ? 'Seu momento de jogar' : 'Aguardando sua vez' }}</span></div><span class="piece-count">{{ count(color()) }} peças</span></div>
+      </section>
+      <aside>
+        <div class="session-card">
+          <div class="eyebrow">SALA DE JOGO</div>
+          @if (!game()) {
+            <h2>Vamos jogar?</h2><p>Crie uma partida e convide alguém. As brancas fazem o primeiro lance.</p>
+            <button class="primary" [disabled]="busy()" (click)="create()">{{ busy() ? 'Preparando…' : 'Criar partida' }} <span>↗</span></button>
+          } @else {
+            <div class="status-dot" [class.active]="myTurn()"></div><h2>{{ game()!.status === 'FINISHED' ? (game()!.winner === color() ? 'Você venceu!' : 'Fim de jogo') : myTurn() ? 'Sua vez.' : 'Vez do adversário.' }}</h2>
+            <p>{{ game()!.status === 'FINISHED' ? 'Uma boa partida merece outra.' : origin() ? (canConfirm() ? 'Lance completo. Confirme para enviar.' : 'Escolha o próximo pouso destacado.') : myTurn() ? 'Selecione uma peça para ver seus próximos movimentos.' : 'Aguarde o lance ou atualize o tabuleiro.' }}</p>
+            @if (pending()) { <button class="primary" [disabled]="busy()" (click)="sendPending()">{{ busy() ? 'Confirmando…' : 'Tentar o mesmo lance' }}</button> }
+            @else { <button class="primary" [disabled]="!canConfirm() || busy()" (click)="confirm()">{{ busy() ? 'Enviando…' : 'Confirmar lance' }} <span>→</span></button> }
+            <div class="actions"><button [disabled]="!origin() || !!pending() || busy()" (click)="undo()">Desfazer seleção</button><button [disabled]="busy()" (click)="load()">Atualizar</button></div>
+            <div class="divider"></div>
+            <button class="invite" (click)="copyInvite()">Copiar convite do adversário <span>↗</span></button>
+            <input class="invite-url" aria-label="Link do adversário" [value]="invitation()" readonly (focus)="$any($event.target).select()">
+            <div class="game-meta"><span>VERSÃO {{ game()!.version }}</span><span>{{ game()!.id.slice(0, 8) }}</span></div>
+            @if (game()!.status === 'FINISHED') { <button class="secondary" (click)="create()">Nova partida</button> }
+          }
+          @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+          @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
+        </div>
+        <div class="rules-card"><span class="rule-icon">↗</span><h3>Cada movimento conta.</h3><p>Capturar é obrigatório. Se houver mais de uma sequência, vale a que captura mais peças.</p><details><summary>Como jogar</summary><p>Pedras avançam na diagonal e capturam para os dois lados. Damas percorrem diagonais livres. Complete todos os saltos antes de confirmar. A promoção acontece no fim do lance.</p></details></div>
+      </aside>
+    </div>
+  </main>
+  <footer><span>FEITO PARA PENSAR À FRENTE.</span><span>Protótipo local · sem relógio ou regras de empate</span></footer>
+</div>

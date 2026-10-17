@@ -10,7 +10,7 @@ infrastructure/  infraestrutura AWS em Terraform (etapa posterior)
 
 ## Etapa atual: domínio jogável, API REST e PostgreSQL local
 
-O domínio está em [backend/README.md](backend/README.md): agregados Partida e Jogador, tabuleiro e lances completos de damas brasileiras. Inclui movimento, captura obrigatória e múltipla, lei da maioria, promoção e vitória. A [API REST local](docs/api.md) cria e consulta partidas e aceita lances com controle de versão e idempotência. O perfil padrão usa memória; o perfil [local-postgres](docs/postgresql.md) persiste estado e histórico com JDBC e migrações Flyway. Ainda não há frontend ou infraestrutura AWS. Empates e relógio ficam para uma etapa posterior.
+O domínio está em [backend/README.md](backend/README.md): agregados Partida e Jogador, tabuleiro e lances completos de damas brasileiras. Inclui movimento, captura obrigatória e múltipla, lei da maioria, promoção e vitória. A [API REST local](docs/api.md) cria e consulta partidas e aceita lances com controle de versão e idempotência. O perfil padrão usa memória; o perfil [local-postgres](docs/postgresql.md) persiste estado e histórico com JDBC e migrações Flyway. O frontend Angular já permite jogar com dois participantes; a infraestrutura AWS será preparada em etapa própria. Empates e relógio ficam para uma etapa posterior.
 
 Requisitos: JDK 25 e Maven 3.6.3 ou superior.
 
@@ -30,3 +30,15 @@ mvn spring-boot:run
 
 Não enviar credenciais nem arquivos de estado ao GitHub.
 
+
+## Interface
+
+Com a API em execução, abra outro terminal:
+
+```bash
+cd frontend
+npm ci
+npm start
+```
+
+Abra http://localhost:4200, crie uma partida e compartilhe o convite do adversário. Veja [frontend/README.md](frontend/README.md).

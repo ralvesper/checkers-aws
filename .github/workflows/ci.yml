@@ -34,5 +34,27 @@ jobs:
           java-version: '25'
           cache: maven
           cache-dependency-path: backend/pom.xml
-      - run: mvn -B test
+      - run: mvn -B package
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm test && npm run build
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Start API for browser tests
+        run: java -jar target/checkers-aws-0.1.0-SNAPSHOT.jar > /tmp/checkers-api.log 2>&1 &
+      - run: npm run test:e2e
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: |
+            frontend/test-results
+            /tmp/checkers-api.log
 
