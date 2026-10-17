@@ -4,6 +4,7 @@ import br.com.highonline.checkers.game.application.*;
 import br.com.highonline.checkers.game.domain.GameId;
 import br.com.highonline.checkers.player.domain.PlayerId;
 import org.springframework.context.annotation.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.http.server.*;
 import org.springframework.web.socket.*;
@@ -18,14 +19,16 @@ import java.util.*;
 public class GameStreamConfiguration implements WebSocketConfigurer {
     private final GameStreamHandler handler;
     private final GameService service;
-    public GameStreamConfiguration(GameStreamHandler handler, GameService service) {
-        this.handler = handler; this.service = service;
+    private final String[] allowedOrigins;
+    public GameStreamConfiguration(GameStreamHandler handler, GameService service,
+            @Value("${checkers.websocket.allowed-origins}") String[] allowedOrigins) {
+        this.handler = handler; this.service = service; this.allowedOrigins = allowedOrigins;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(handler, "/games/*/stream")
-                .setAllowedOrigins("http://localhost:4200", "http://127.0.0.1:4200")
+                .setAllowedOrigins(allowedOrigins)
                 .addInterceptors(new HandshakeInterceptor() {
                     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                                    WebSocketHandler handler, Map<String, Object> attributes) {

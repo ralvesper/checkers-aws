@@ -17,9 +17,8 @@ Referência: [CBJD, Regras Oficiais de Jogo de Damas](https://midiasstoragesec.b
 | Jogador sem peças ou sem lance disponível | Partida termina com vitória do adversário. |
 | Versão esperada desatualizada | Comando rejeitado sem alterar o agregado. |
 
-## Validar antes de implementar
+## Decisões adotadas
 
-- O frontend enviará o caminho completo em um comando, ou cada salto separadamente? **Proposta: caminho completo.**
-- Qual orientação visual do tabuleiro será usada no Angular? Internamente, `row=0` é a base das pretas e `row=7` a base das brancas; isso corresponde ao primeiro lance das brancas subindo no array.
-- Empates e relógio entram em qual etapa? Proposta: primeiro movimentos e vitória; depois repetição, contagens e tempo.
-
+- O frontend envia o caminho completo em um comando, depois da confirmação do jogador.
+- Internamente, row=0 é a base das pretas e row=7 a base das brancas. A interface gira o tabuleiro para as pretas; as coordenadas enviadas não mudam.
+- O MVP inclui movimentos e vitória. Empates oficiais, contagens e relógio ficam para evolução posterior.

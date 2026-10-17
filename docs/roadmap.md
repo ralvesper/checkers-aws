@@ -1,13 +1,26 @@
-# Roadmap de aprendizado
+# Roadmap — MVP local entregue
 
-Estas etapas agrupam as [issues](https://github.com/ralvesper/checkers-aws/issues) do projeto. Sem prazo fixo: avançamos após validar os critérios de cada etapa.
-
-| Etapa | Issues | Validação / estudo |
+| Etapa | Estado | Evidência |
 |---|---|---|
-| 1. Domínio jogável | [#1](https://github.com/ralvesper/checkers-aws/issues/1), [#2](https://github.com/ralvesper/checkers-aws/issues/2) | Regras brasileiras, agregados, invariantes e testes de domínio |
-| 2. API e persistência | [#3](https://github.com/ralvesper/checkers-aws/issues/3), [#4](https://github.com/ralvesper/checkers-aws/issues/4) | Contrato REST, transação, versão otimista e idempotência |
-| 3. Interface Angular | [#5](https://github.com/ralvesper/checkers-aws/issues/5) | Tabuleiro, turno, captura múltipla e reconciliação de estado |
-| 4. Rede AWS com Terraform | [#6](https://github.com/ralvesper/checkers-aws/issues/6) | VPC, CIDR, subnets, rotas, plano e custos |
-| 5. Implantação e tempo real | [#7](https://github.com/ralvesper/checkers-aws/issues/7), [#8](https://github.com/ralvesper/checkers-aws/issues/8) | ECS, RDS, ALB, WebSocket e reconexão |
+| Domínio jogável | Implementado | Regras brasileiras, agregados, lances completos e testes |
+| API e persistência | Implementado | REST, JDBC, migrações, versão otimista, idempotência e testes em PostgreSQL |
+| Interface Angular | Implementado | Tabuleiro, turnos, captura múltipla, convite e Playwright com dois jogadores |
+| Tempo real | Implementado em uma instância | WebSocket após commit, reconexão e recuperação por REST |
+| Execução local | Implementado | Compose, Nginx, healthchecks e scripts Bash/PowerShell |
+| Rede AWS | Código preparado | VPC, seis subnets, rotas e IGW; padrão sem aplicação/NAT |
+| Aplicação AWS | Código preparado, não implantado | ECS de uma tarefa, RDS, ALB HTTPS, S3/CloudFront, WAF por IP e secrets |
 
-Veja também os [diagramas](diagrams/README.md). A primeira decisão a validar é a issue #1.
+O contrato de turno completo foi adotado e exercitado na interface: o jogador compõe todos os pousos antes
+de confirmar. A regra de empate e o relógio ficaram fora do recorte inicial, conforme a decisão de escopo.
+
+## Evolução além do MVP
+
+- Autenticação real e convites seguros antes de abrir acesso público.
+- Regras oficiais de empate, desistência e relógio.
+- Cadastro, matchmaking, ranking e histórico navegável, conforme necessidade.
+- Pool de conexões, paginação e consulta de recibo específico.
+- Outbox transacional e distribuição entre instâncias antes de escalar o hub.
+- Planejamento e implantação AWS autorizada, smoke tests HTTPS/WSS e análise de custos.
+- Multi-AZ, autoscaling e recuperação global conforme objetivos reais de disponibilidade.
+
+Consulte [running.md](running.md) para executar e [infraestrutura](../infrastructure/README.md) para os limites da preparação AWS.

@@ -7,7 +7,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
-/** A change must atomically commit both state and receipts, or commit neither. */
+/** A change must atomically commit both state and receipts, or commit neither.
+ * Update callbacks may be retried after a version collision and must have no external side effects.
+ */
 public interface GameStore {
     void create(Game game);
     Optional<Game> find(GameId id);

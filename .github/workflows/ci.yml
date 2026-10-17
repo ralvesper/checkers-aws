@@ -50,6 +50,30 @@ jobs:
         run: java -jar target/checkers-aws-0.1.0-SNAPSHOT.jar > /tmp/checkers-api.log 2>&1 &
       - run: npm run test:e2e
         working-directory: frontend
+      - name: Build and start full container stack
+        working-directory: .
+        env:
+          CHECKERS_DATABASE_PASSWORD: ci_container_only
+          CHECKERS_POSTGRES_PORT: '5433'
+        run: docker compose up --build -d --wait --wait-timeout 240
+      - name: Test actual container images through Nginx
+        working-directory: frontend
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:8081
+        run: npm run test:e2e
+      - name: Verify durable state after API restart
+        working-directory: .
+        env:
+          CHECKERS_DATABASE_PASSWORD: ci_container_only
+          CHECKERS_POSTGRES_PORT: '5433'
+        run: python scripts/smoke-containers.py --restart
+      - name: Stop test containers
+        if: always()
+        working-directory: .
+        env:
+          CHECKERS_DATABASE_PASSWORD: ci_container_only
+          CHECKERS_POSTGRES_PORT: '5433'
+        run: docker compose down -v
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -57,4 +81,18 @@ jobs:
           path: |
             frontend/test-results
             /tmp/checkers-api.log
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.14.4'
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+      - run: terraform test
 

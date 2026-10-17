@@ -21,5 +21,8 @@ Antes de escalar horizontalmente, implementar outbox na transação da jogada e 
 uma queda entre commit e broadcast é recuperada ao reconectar/consultar REST, não por entrega durável.
 Não há promessa de entrega exatamente uma vez. PostgreSQL mantém estado e recibos independentemente do socket.
 
+Origens adicionais devem ser explicitamente configuradas em `CHECKERS_WEBSOCKET_ALLOWED_ORIGINS`;
+o Compose permite apenas os endereços locais do frontend e o laboratório AWS permite o hostname do CloudFront.
+
 O CI verifica handshake de participante, isolamento de sala, snapshot após aceite e recuperação na reconexão.
 Playwright testa dois navegadores, interrupção de rede, atualização sem botão e recarregamento.

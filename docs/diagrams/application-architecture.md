@@ -1,13 +1,13 @@
 # Arquitetura da aplicação
 
-> **Estado atual:** o backend contém o domínio jogável, casos de uso e API REST local com controle de versão e idempotência. Há adaptadores em memória e PostgreSQL, este com migrações Flyway e gravação transacional de estado e lances. Angular, autenticação real, WebSocket e infraestrutura AWS abaixo são propostas para as próximas etapas. Consulte o [contrato local](../api.md) e [PostgreSQL local](../postgresql.md). O [desenho global](aws-deployment-global.md) é um estudo de escala posterior.
+> **Estado atual:** o MVP local implementa domínio, REST, PostgreSQL, Angular e WebSocket em uma instância. Terraform regional foi preparado, mas não aplicado. Autenticação real, outbox e distribuição entre instâncias continuam futuras. Veja [execução](../running.md) e [tempo real](../realtime.md). Os diagramas de worker/ElastiCache e arquitetura global abaixo são estudos de evolução.
 
 ## Componentes da aplicação
 
 ```mermaid
 flowchart TB
     UI["Angular: tabuleiro e interacao"]
-    API["Spring Boot: API REST e WebSocket futuro"]
+    API["Spring Boot: API REST e WebSocket"]
     APP["game/application: casos de uso"]
     DOMAIN["game/domain: agregado Game e regras"]
     PORT["game/application: porta de persistencia"]
@@ -27,7 +27,7 @@ flowchart TB
 |---|---|
 | Angular | Exibe tabuleiro, turno e versão; monta o lance completo e envia comando. Ao reconectar ou detectar lacuna de versão, consulta o estado atual. |
 | API REST | Recebe comandos e devolve confirmação ou erro ao autor da jogada; identifica o usuário autenticado. `GET /games/{id}` fornece o estado oficial. |
-| WebSocket | Após implementado, entrega ao adversário o estado confirmado da partida para atualizar o tabuleiro sem novo GET. Não decide o turno nem garante histórico de eventos. |
+| WebSocket | Entrega ao adversário o estado confirmado da partida para atualizar o tabuleiro sem novo GET. Não decide o turno nem garante histórico de eventos. |
 | `game/application` | Coordena carregamento, autorização, chamada ao domínio e persistência transacional; define portas para dependências externas. |
 | `game/domain` | `Game` valida um lance inteiro conforme as [regras brasileiras](../rules/README.md), atualiza tabuleiro e troca a vez. Independe de Spring e PostgreSQL. |
 | `game/infrastructure` | Adapta banco e transporte às portas da aplicação; atualiza o estado condicionalmente por `expectedVersion`. |
@@ -35,7 +35,7 @@ flowchart TB
 
 Os pacotes são organizados **por funcionalidade**: `game/domain`, `game/application` e `game/infrastructure`. `Player` forma outro agregado, referenciado por `PlayerId`. A versão detecta comandos enviados sobre um estado antigo; `clientMoveId` torna o reenvio idempotente. Veja o [modelo de domínio](domain-model.md).
 
-## Sequência de uma jogada
+## Sequência alvo de uma jogada (com outbox futura)
 
 ### Autor da jogada recebe a confirmação
 
