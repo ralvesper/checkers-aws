@@ -17,6 +17,8 @@ Em caso de falha de rede, "Tentar o mesmo lance" reutiliza o clientMoveId origin
 Conflitos de versão recarregam o estado oficial e cancelam a seleção antiga.
 
 O dev server encaminha /api ao backend. Não há necessidade de CORS aberto.
+O WebSocket atualiza o adversário automaticamente. A interface mostra AO VIVO ou RECONECTANDO;
+reconexões e lacunas de versão recuperam o estado por REST. Veja [realtime.md](../docs/realtime.md).
 
 ```bash
 npm test

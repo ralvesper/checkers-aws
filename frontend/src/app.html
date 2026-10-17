@@ -33,7 +33,7 @@
             <div class="divider"></div>
             <button class="invite" (click)="copyInvite()">Copiar convite do adversário <span>↗</span></button>
             <input class="invite-url" aria-label="Link do adversário" [value]="invitation()" readonly (focus)="$any($event.target).select()">
-            <div class="game-meta"><span>VERSÃO {{ game()!.version }}</span><span>{{ game()!.id.slice(0, 8) }}</span></div>
+            <div class="game-meta"><span>VERSÃO {{ game()!.version }}</span><span>{{ connection() === 'live' ? 'AO VIVO' : connection() === 'reconnecting' ? 'RECONECTANDO' : 'CONECTANDO' }}</span></div>
             @if (game()!.status === 'FINISHED') { <button class="secondary" (click)="create()">Nova partida</button> }
           }
           @if (error()) { <p class="error" role="alert">{{ error() }}</p> }

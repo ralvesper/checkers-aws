@@ -3,6 +3,7 @@ package br.com.highonline.checkers.game.infrastructure.http;
 import br.com.highonline.checkers.game.application.*;
 import br.com.highonline.checkers.game.domain.*;
 import br.com.highonline.checkers.player.domain.PlayerId;
+import br.com.highonline.checkers.game.infrastructure.realtime.GameStreamHandler;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +18,8 @@ import org.springframework.web.bind.annotation.*;
 @Profile({"local", "local-postgres"})
 public class GameController {
     private final GameService service;
-    public GameController(GameService service) { this.service = service; }
+    private final GameStreamHandler stream;
+    public GameController(GameService service, GameStreamHandler stream) { this.service = service; this.stream = stream; }
 
     @PostMapping
     public ResponseEntity<GameResponse> create(@RequestHeader("X-Player-Id") UUID actor,
@@ -38,7 +40,9 @@ public class GameController {
         PlayMove command = new PlayMove(new PlayerId(actor),
                 new Move(request.from().toSquare(), request.landings().stream().map(Position::toSquare).toList()),
                 request.expectedVersion(), request.clientMoveId());
-        return GameResponse.from(service.play(new GameId(id), command));
+        Game confirmed = service.play(new GameId(id), command);
+        stream.publish(confirmed);
+        return GameResponse.from(confirmed);
     }
 
     public record CreateGameRequest(UUID blackPlayerId, UUID whitePlayerId) {
@@ -76,7 +80,7 @@ public class GameController {
     public record GameResponse(UUID id, UUID blackPlayerId, UUID whitePlayerId, Color turn,
                                UUID currentPlayerId, long version, GameStatus status, Color winner,
                                List<PieceResponse> pieces, List<MoveResponse> legalMoves) {
-        static GameResponse from(Game game) {
+        public static GameResponse from(Game game) {
             List<PieceResponse> pieces = new ArrayList<>();
             for (int row = 0; row < 8; row++) {
                 for (int column = 0; column < 8; column++) {
