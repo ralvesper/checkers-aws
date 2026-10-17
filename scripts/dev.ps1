@@ -3,6 +3,7 @@ param(
   [switch]$DeleteData
 )
 $ErrorActionPreference = 'Stop'
+$originalPassword = $env:CHECKERS_DATABASE_PASSWORD
 Push-Location (Join-Path $PSScriptRoot '..')
 try {
   if ($Action -ne 'up' -and -not $env:CHECKERS_DATABASE_PASSWORD) { $env:CHECKERS_DATABASE_PASSWORD = 'unused-for-stop' }
@@ -14,4 +15,8 @@ try {
     'reset' { if (-not $DeleteData) { throw 'Para apagar o banco local, use: ./scripts/dev.ps1 reset -DeleteData' }; docker compose down -v }
   }
   if ($LASTEXITCODE -ne 0) { throw "Docker Compose falhou: $LASTEXITCODE" }
-} finally { Pop-Location }
+} finally {
+  if ($null -eq $originalPassword) { Remove-Item Env:CHECKERS_DATABASE_PASSWORD -ErrorAction SilentlyContinue }
+  else { $env:CHECKERS_DATABASE_PASSWORD = $originalPassword }
+  Pop-Location
+}

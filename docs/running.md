@@ -64,5 +64,6 @@ O hub de eventos atende uma instância; escala horizontal exige outbox e distrib
 
 O CI executa backend com PostgreSQL real, testes do frontend, build Angular, Playwright com interrupção de rede,
 construção das imagens Docker e o mesmo teste de navegador através do Nginx/Compose.
+Um smoke test adicional reinicia a API e confere por HTTP que estado e recibo de idempotência permanecem no banco.
 Também executa terraform fmt/validate/test sem criar recursos AWS.
 Terraform preparado não equivale a implantação validada: DNS, certificados, conta, custos e smoke test AWS dependem da etapa de implantação.

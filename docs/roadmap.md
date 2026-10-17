@@ -11,7 +11,7 @@
 | Aplicação AWS | Código preparado, não implantado | ECS de uma tarefa, RDS, ALB HTTPS, S3/CloudFront, WAF por IP e secrets |
 
 O contrato de turno completo foi adotado e exercitado na interface: o jogador compõe todos os pousos antes
- de confirmar. A regra de empate e o relógio ficaram fora do recorte inicial, conforme a decisão de escopo.
+de confirmar. A regra de empate e o relógio ficaram fora do recorte inicial, conforme a decisão de escopo.
 
 ## Evolução além do MVP
 

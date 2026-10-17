@@ -61,6 +61,12 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:8081
         run: npm run test:e2e
+      - name: Verify durable state after API restart
+        working-directory: .
+        env:
+          CHECKERS_DATABASE_PASSWORD: ci_container_only
+          CHECKERS_POSTGRES_PORT: '5433'
+        run: python scripts/smoke-containers.py --restart
       - name: Stop test containers
         if: always()
         working-directory: .
