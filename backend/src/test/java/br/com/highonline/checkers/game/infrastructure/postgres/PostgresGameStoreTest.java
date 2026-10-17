@@ -89,7 +89,7 @@ class PostgresGameStoreTest {
         var command = new PlayMove(white, game.legalMoves().get(0), 0, UUID.randomUUID());
         jdbc.execute("""
                 CREATE FUNCTION reject_test_move() RETURNS trigger LANGUAGE plpgsql AS $$
-                BEGIN RAISE EXCEPTION 'injected history failure'; END $$
+                BEGIN RAISE EXCEPTION 'injected history failure'; END; $$
                 """);
         jdbc.execute("CREATE TRIGGER reject_test_move BEFORE INSERT ON game_moves FOR EACH ROW EXECUTE FUNCTION reject_test_move()");
         try {
