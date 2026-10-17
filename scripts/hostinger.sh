@@ -11,7 +11,7 @@ COMPOSE_FILES="-f compose.yaml -f compose.hostinger.yaml"
 
 sync() {
   rsync -az --delete \
-    --exclude .git --exclude node_modules --exclude target --exclude dist --exclude .angular --exclude .env \
+    --exclude .git --exclude node_modules --exclude target --exclude dist --exclude .angular --exclude .env --exclude backups --exclude .playwright-mcp \
     ./ "$REMOTE_HOST:$REMOTE_DIR/"
   ssh "$REMOTE_HOST" "test -f $REMOTE_DIR/.env || cp $REMOTE_DIR/.env.example $REMOTE_DIR/.env"
   # Gera a chave de sessão uma única vez; nunca a sobrescreve (ver docs/hostinger.md).
