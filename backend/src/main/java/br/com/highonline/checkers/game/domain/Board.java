@@ -12,6 +12,11 @@ public final class Board {
 
     // Package-private position factory for rules and domain scenarios.
     static Board of(Map<Square, Piece> pieces) {
+        return restore(pieces);
+    }
+
+    /** Reconstitutes a persisted board without exposing mutable collections. */
+    public static Board restore(Map<Square, Piece> pieces) {
         if (pieces == null || pieces.keySet().stream().anyMatch(square -> !square.isDark())) {
             throw new IllegalArgumentException("Pieces must occupy dark squares");
         }

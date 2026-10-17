@@ -5,7 +5,7 @@ import br.com.highonline.checkers.game.infrastructure.memory.InMemoryGameStore;
 import org.springframework.context.annotation.*;
 
 @Configuration
-@Profile("local")
+@Profile("local & !local-postgres")
 public class LocalGameConfiguration {
     @Bean GameStore gameStore() { return new InMemoryGameStore(); }
     @Bean GameService gameService(GameStore store) { return new GameService(store); }

@@ -5,6 +5,24 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: checkers_test
+          POSTGRES_USER: checkers
+          POSTGRES_PASSWORD: checkers_test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U checkers -d checkers_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PG_TEST_URL: jdbc:postgresql://localhost:5432/checkers_test
+      PG_TEST_USER: checkers
+      PG_TEST_PASSWORD: checkers_test_only
     defaults:
       run:
         working-directory: backend
@@ -17,3 +35,4 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
       - run: mvn -B test
+
